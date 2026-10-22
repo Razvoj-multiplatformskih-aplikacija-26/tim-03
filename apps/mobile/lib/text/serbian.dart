@@ -36,6 +36,9 @@ const _months = [
   'decembar',
 ];
 
+const _weekdaysShort = ['pon', 'uto', 'sre', 'čet', 'pet', 'sub', 'ned'];
+const _monthsShort = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'avg', 'sep', 'okt', 'nov', 'dec'];
+
 String _longDate(DateTime date) => '${_weekdays[date.weekday - 1]}, ${date.day}. ${_months[date.month - 1]}';
 
 String _shortDate(DateTime date) => '${date.day}. ${date.month}.';
@@ -55,6 +58,28 @@ String formatShortDate(DateTime instant) => _shortDate(centerTime(instant));
 
 String formatDateAndTime(DateTime instant) => '${formatDate(instant)} u ${formatTime(instant)}';
 
+String formatWeekdayShort(DateTime instant) => _weekdaysShort[centerTime(instant).weekday - 1];
+
+String formatMonthShort(DateTime instant) => _monthsShort[centerTime(instant).month - 1];
+
+/// 'Danas', 'Sutra' or 'Juče' when [instant] falls on one of those days in the center, otherwise null.
+String? relativeDayLabel(DateTime instant, {required DateTime now}) {
+  final day = centerDay(instant);
+  final today = centerDay(now);
+  // Through UTC, so a day with a clock change still counts as one day.
+  final days = DateTime.utc(
+    day.year,
+    day.month,
+    day.day,
+  ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+  return switch (days) {
+    -1 => 'Juče',
+    0 => 'Danas',
+    1 => 'Sutra',
+    _ => null,
+  };
+}
+
 String capitalize(String text) => text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 
 /// Whole nights between handing a pet over and picking it up, counted in the center's calendar.
@@ -73,6 +98,17 @@ String periodLabel(ServiceOrder order) {
     ServiceType.grooming || ServiceType.vetCheckup || ServiceType.walk =>
       '${capitalize(formatDate(period.start))}, ${formatTime(period.start)}–${formatTime(period.end)}',
   };
+}
+
+/// When the order takes place, for a card that already shows the day it starts.
+String timeLabel(ServiceOrder order, {required DateTime now}) {
+  final period = order.period;
+  if (order.service.visitLength == null) {
+    return '${nightsLabel(nightsOf(period))} · do ${formatShortDate(period.end)}';
+  }
+  final hours = '${formatTime(period.start)}–${formatTime(period.end)}';
+  final day = relativeDayLabel(period.start, now: now);
+  return day == null ? hours : '$day, $hours';
 }
 
 extension ServiceTypeText on ServiceType {
