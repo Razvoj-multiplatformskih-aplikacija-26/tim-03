@@ -15,6 +15,8 @@ dependencies:
   domain:
     path: ../../packages/domain
   go_router: 18.0.2
+  use_cases:
+    path: ../../packages/use_cases
 
 dev_dependencies:
   flutter_test:
