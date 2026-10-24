@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../data/fake_center.dart';
 import '../data/fake_data.dart';
 import '../dependencies.dart';
+import '../text/domain_errors.dart';
 import '../widgets/order_card.dart';
 
 /// A titled part of one tab, such as the orders that are happening right now.
@@ -16,12 +17,27 @@ typedef _Group = (String title, List<ServiceOrder> orders);
 class MyOrdersScreen extends StatelessWidget {
   const MyOrdersScreen({super.key});
 
+  /// Shown once, wherever the owner cancelled from, and then acknowledged so it is not shown again.
+  void _showNotice(BuildContext context, MyOrdersNotice notice) {
+    final message = switch (notice) {
+      OrderCancelled() => 'Nalog je otkazan.',
+      CancellationRejected(:final error) => error.message,
+      CancellationFailed() => 'Otkazivanje nije uspelo. Proverite vezu i pokušajte ponovo.',
+    };
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+    context.read<MyOrdersBloc>().add(const MyOrdersNoticeAcknowledged());
+  }
+
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<MyOrdersBloc>();
     final owner = context.read<AppDependencies>().owner;
     final pets = fakePets.where((pet) => pet.ownerId == owner.id).toList();
-    return BlocBuilder<MyOrdersBloc, MyOrdersState>(
+    return BlocConsumer<MyOrdersBloc, MyOrdersState>(
+      listenWhen: (previous, current) => current is MyOrdersLoaded && current.notice != null,
+      listener: (context, state) => _showNotice(context, (state as MyOrdersLoaded).notice!),
       builder: (context, state) {
         final petFilter = switch (state) {
           MyOrdersLoaded(:final petFilter) => petFilter,

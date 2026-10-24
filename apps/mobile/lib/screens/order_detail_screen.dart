@@ -1,12 +1,16 @@
+import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/fake_data.dart';
+import '../dependencies.dart';
 import '../text/domain_errors.dart';
 import '../text/serbian.dart';
 import '../widgets/service_avatar.dart';
 import '../widgets/status_badge.dart';
 
+/// Draws one order from the state of [MyOrdersBloc], so the list and the detail always show the same data.
 class OrderDetailScreen extends StatelessWidget {
   const OrderDetailScreen({super.key, required this.id});
 
@@ -14,20 +18,24 @@ class OrderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: fakeOrders,
-      builder: (context, _) {
-        final order = fakeOrders.byId(id);
-        if (order == null || !AccessPolicy.canView(currentOwner, order)) return const _NotFound();
-        return _DetailBody(order: order);
+    final owner = context.read<AppDependencies>().owner;
+    return BlocBuilder<MyOrdersBloc, MyOrdersState>(
+      builder: (context, state) => switch (state) {
+        MyOrdersLoading() => const _Loading(),
+        MyOrdersFailure() || MyOrdersEmpty() => const _NotFound(),
+        MyOrdersLoaded() => switch (state.byId(id)) {
+          final order? when AccessPolicy.canView(owner, order) => _DetailBody(order: order, state: state),
+          _ => const _NotFound(),
+        },
       },
     );
   }
 }
 
-/// Asks for confirmation, then cancels through the domain. Returns the text for the snack bar, or null if the owner
-/// changed their mind.
-Future<String?> confirmAndCancel(BuildContext context, ServiceOrder order) async {
+/// Asks for confirmation, then hands the cancellation to the bloc. The bloc lets the domain decide and reports the
+/// result as a notice, which the orders screen shows.
+Future<void> confirmAndCancel(BuildContext context, ServiceOrder order) async {
+  final bloc = context.read<MyOrdersBloc>();
   final pet = petById(order.petId);
   final confirmed = await showDialog<bool>(
     context: context,
@@ -43,28 +51,24 @@ Future<String?> confirmAndCancel(BuildContext context, ServiceOrder order) async
       ],
     ),
   );
-  if (confirmed != true) return null;
-  final result = cancelOrder(order, by: currentOwner, now: DateTime.now(), reason: 'Otkazano u aplikaciji.');
-  switch (result) {
-    case Success(:final value):
-      fakeOrders.replace(value);
-      return 'Nalog je otkazan.';
-    case Failure(:final error):
-      return error.message;
-  }
+  if (confirmed != true) return;
+  bloc.add(OrderCancellationRequested(order.id, reason: 'Otkazano u aplikaciji.'));
 }
 
 class _DetailBody extends StatelessWidget {
-  const _DetailBody({required this.order});
+  const _DetailBody({required this.order, required this.state});
 
   final ServiceOrder order;
+  final MyOrdersLoaded state;
 
-  Future<void> _cancel(BuildContext context) async {
-    final message = await confirmAndCancel(context, order);
-    if (message == null || !context.mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+  /// The bloc has already asked the domain whether the owner may cancel; the screen only shows the answer.
+  Widget? _cancelBar(BuildContext context) {
+    if (state.isCancelling(order)) return const _CancelBar(onCancel: null, busy: true);
+    if (state.canCancel(order)) {
+      return _CancelBar(onCancel: state.isBusy ? null : () => confirmAndCancel(context, order));
+    }
+    if (state.isTooLateToCancel(order)) return _CancelBar(onCancel: null, hint: const CancellationTooLate().message);
+    return null;
   }
 
   String _staffName(UserId id) => staffById(id)?.name ?? id.value;
@@ -171,13 +175,6 @@ class _DetailBody extends StatelessWidget {
         value: capitalize(formatDateAndTime(order.createdAt)),
       ),
     ];
-    // The domain decides whether the owner may cancel; the screen only shows the answer.
-    final cancelCheck = cancelOrder(order, by: currentOwner, now: DateTime.now());
-    final cancelBar = switch (cancelCheck) {
-      Success() => _CancelBar(onCancel: () => _cancel(context)),
-      Failure(error: final CancellationTooLate error) => _CancelBar(onCancel: null, hint: error.message),
-      Failure() => null,
-    };
     return Scaffold(
       appBar: AppBar(title: const Text('Nalog')),
       body: Center(
@@ -225,16 +222,19 @@ class _DetailBody extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: cancelBar,
+      bottomNavigationBar: _cancelBar(context),
     );
   }
 }
 
 class _CancelBar extends StatelessWidget {
-  const _CancelBar({required this.onCancel, this.hint});
+  const _CancelBar({required this.onCancel, this.hint, this.busy = false});
 
   final VoidCallback? onCancel;
   final String? hint;
+
+  /// The cancellation is on its way; the button waits for the answer.
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
@@ -260,8 +260,10 @@ class _CancelBar extends StatelessWidget {
               ],
               OutlinedButton.icon(
                 onPressed: onCancel,
-                icon: const Icon(Icons.close),
-                label: const Text('Otkaži nalog'),
+                icon: busy
+                    ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2.5))
+                    : const Icon(Icons.close),
+                label: Text(busy ? 'Otkazivanje…' : 'Otkaži nalog'),
               ),
             ],
           ),
@@ -297,6 +299,20 @@ class _NotFound extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Nalog')),
       body: Center(child: Text(const NotFound().message, style: Theme.of(context).textTheme.titleLarge)),
+    );
+  }
+}
+
+class _Loading extends StatelessWidget {
+  const _Loading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Nalog')),
+      body: Center(
+        child: Semantics(label: 'Učitavanje naloga', child: const CircularProgressIndicator()),
+      ),
     );
   }
 }
