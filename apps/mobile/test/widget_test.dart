@@ -2,13 +2,16 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app.dart';
+import 'package:mobile/dependencies.dart';
 import 'package:mobile/widgets/order_card.dart';
 
 void main() {
   setUpAll(initializeDomainTimeZones);
 
+  Widget app() => SapaApp(dependencies: AppDependencies.fake(latency: Duration.zero));
+
   testWidgets('starts on the owner\'s orders', (tester) async {
-    await tester.pumpWidget(const SapaApp());
+    await tester.pumpWidget(app());
     await tester.pumpAndSettle();
 
     expect(find.text('Moji nalozi'), findsOneWidget);
@@ -18,7 +21,7 @@ void main() {
   });
 
   testWidgets('shows finished orders on the second tab', (tester) async {
-    await tester.pumpWidget(const SapaApp());
+    await tester.pumpWidget(app());
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Prethodni'));
@@ -28,7 +31,7 @@ void main() {
   });
 
   testWidgets('shows only the chosen pet\'s orders', (tester) async {
-    await tester.pumpWidget(const SapaApp());
+    await tester.pumpWidget(app());
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Mica'));

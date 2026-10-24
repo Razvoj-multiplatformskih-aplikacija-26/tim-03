@@ -1,5 +1,4 @@
 import 'package:domain/domain.dart';
-import 'package:flutter/foundation.dart';
 
 /// The one signed-in user of the app. Signing in arrives with the server in KT2.
 const currentOwner = User(id: UserId('u-owner'), name: 'Jelena Marković', role: Role.owner);
@@ -39,30 +38,7 @@ User? staffById(UserId id) => fakeStaff.where((user) => user.id == id).firstOrNu
 
 Kennel? kennelById(KennelId id) => fakeKennels.where((kennel) => kennel.id == id).firstOrNull;
 
-/// Orders kept in memory for the demo. In Faza 4 a repository behind a port takes its place.
-class FakeOrders extends ChangeNotifier {
-  FakeOrders(List<ServiceOrder> orders) : _orders = [...orders];
-
-  final List<ServiceOrder> _orders;
-
-  List<ServiceOrder> get all => List.unmodifiable(_orders);
-
-  ServiceOrder? byId(OrderId id) => _orders.where((order) => order.id == id).firstOrNull;
-
-  void add(ServiceOrder order) {
-    _orders.add(order);
-    notifyListeners();
-  }
-
-  void replace(ServiceOrder order) {
-    _orders[_orders.indexWhere((existing) => existing.id == order.id)] = order;
-    notifyListeners();
-  }
-}
-
-final fakeOrders = FakeOrders(seedOrders(DateTime.now()));
-
-/// Twelve orders around [now], at least one in each of the seven states.
+/// Twelve orders around [now], at least one in each of the seven states. FakeCenter starts with them.
 List<ServiceOrder> seedOrders(DateTime now) {
   final hours = centerOpeningHours;
   final today = centerDay(now);

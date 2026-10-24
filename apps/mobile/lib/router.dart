@@ -1,7 +1,11 @@
+import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:use_cases/use_cases.dart';
 
+import 'dependencies.dart';
 import 'screens/home_shell.dart';
 import 'screens/my_orders_screen.dart';
 import 'screens/order_detail_screen.dart';
@@ -30,7 +34,15 @@ final router = GoRouter(
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final petId = state.uri.queryParameters['pet'];
-                    return OrderFormScreen(initialPetId: petId == null ? null : PetId(petId));
+                    final dependencies = context.read<AppDependencies>();
+                    // A local bloc: it lives as long as the form is open.
+                    return BlocProvider(
+                      create: (_) => OrderFormBloc(
+                        placeOrder: PlaceOrder(orders: dependencies.orders),
+                        owner: dependencies.owner,
+                      ),
+                      child: OrderFormScreen(initialPetId: petId == null ? null : PetId(petId)),
+                    );
                   },
                 ),
                 GoRoute(

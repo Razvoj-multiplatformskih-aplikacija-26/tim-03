@@ -1,14 +1,19 @@
+import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:use_cases/use_cases.dart';
 
 import '../data/fake_data.dart';
+import '../dependencies.dart';
 import '../text/domain_errors.dart';
 import '../text/serbian.dart';
 import '../widgets/service_avatar.dart';
 
-/// Every check in this form is a call into the domain: R1 note, R2 nights, R3 period, R6 on submit.
+/// Every check in this form is a call into the domain: R1 note, R2 nights, R3 period while typing. The order is sent
+/// through [OrderFormBloc], and the repository decides R6 over every order.
 class OrderFormScreen extends StatefulWidget {
   const OrderFormScreen({super.key, this.initialPetId});
 
@@ -23,10 +28,12 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   final _nightsController = TextEditingController(text: '${StayLength.min}');
   final _noteController = TextEditingController();
 
-  late final List<Pet> _pets = fakePets.where((pet) => pet.ownerId == currentOwner.id).toList();
+  late final Clock _clock = context.read<AppDependencies>().clock;
+  late final User _owner = context.read<AppDependencies>().owner;
+  late final List<Pet> _pets = fakePets.where((pet) => pet.ownerId == _owner.id).toList();
   late Pet _pet = _pets.firstWhere((pet) => pet.id == widget.initialPetId, orElse: () => _pets.first);
   ServiceType _service = ServiceType.boarding;
-  late DateTime _day = _firstDayWithFreeStart(DateTime.now());
+  late DateTime _day = _firstDayWithFreeStart(_clock.now());
   DateTime? _start;
 
   @override
@@ -58,7 +65,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     return ServicePeriod.parse(
       start,
       service: _service,
-      now: DateTime.now(),
+      now: _clock.now(),
       openingHours: centerOpeningHours,
       nights: StayLength.parse(_nightsInput ?? StayLength.min).valueOrNull ?? StayLength.shortest,
     );
@@ -85,7 +92,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   }
 
   Future<void> _pickDay() async {
-    final today = centerDay(DateTime.now());
+    final today = centerDay(_clock.now());
     final picked = await showDatePicker(
       context: context,
       initialDate: _day,
@@ -109,27 +116,31 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
-    final period = _period(_start)!.valueOrNull!;
     final note = OrderNote.parse(_noteController.text).valueOrNull!;
-    final now = DateTime.now();
-    final result = placeOrder(
-      id: OrderId('o-${now.microsecondsSinceEpoch}'),
-      by: currentOwner,
-      pet: _pet,
-      service: _service,
-      period: period,
-      orders: fakeOrders.all,
-      now: now,
-      note: note.isEmpty ? null : note,
+    context.read<OrderFormBloc>().add(
+      OrderFormSubmitted(
+        pet: _pet,
+        service: _service,
+        period: _period(_start)!.valueOrNull!,
+        note: note.isEmpty ? null : note,
+      ),
     );
-    switch (result) {
-      case Failure(:final error):
-        _showMessage(error.message);
-      case Success(:final value):
-        fakeOrders.add(value);
+  }
+
+  /// What came back from sending: the screen shows it, the bloc has decided nothing on its own.
+  void _onSent(BuildContext context, OrderFormState state) {
+    switch (state) {
+      case OrderFormSucceeded():
         HapticFeedback.mediumImpact();
+        context.read<MyOrdersBloc>().add(const MyOrdersRefreshed());
         _showMessage('Nalog je poslat. Čeka potvrdu osoblja.');
         context.go('/orders');
+      case OrderFormRejected(:final error):
+        _showMessage(error.message);
+      case OrderFormFailed():
+        _showMessage('Nalog nije poslat. Proverite vezu i pokušajte ponovo.');
+      case OrderFormEditing() || OrderFormSubmitting():
+        break;
     }
   }
 
@@ -148,115 +159,124 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     final theme = Theme.of(context);
     final isBoarding = _service == ServiceType.boarding;
     final starts = _startsOn(_day);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Zakaži uslugu')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const _Label('Ljubimac'),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final pet in _pets)
-                        ChoiceChip(
-                          avatar: const Icon(Icons.pets, size: 18),
-                          label: Text(pet.name),
-                          selected: pet == _pet,
-                          onSelected: (_) => setState(() => _pet = pet),
+    return BlocListener<OrderFormBloc, OrderFormState>(
+      listener: _onSent,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Zakaži uslugu')),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _Label('Ljubimac'),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final pet in _pets)
+                          ChoiceChip(
+                            avatar: const Icon(Icons.pets, size: 18),
+                            label: Text(pet.name),
+                            selected: pet == _pet,
+                            onSelected: (_) => setState(() => _pet = pet),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    const _Label('Usluga'),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final service in ServiceType.values)
+                          ChoiceChip(
+                            avatar: Icon(serviceIcon(service), size: 18),
+                            label: Text(service.label),
+                            selected: service == _service,
+                            onSelected: (_) => _selectService(service),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: _pickDay,
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: isBoarding ? 'Datum predaje' : 'Datum',
+                          suffixIcon: const Icon(Icons.calendar_month_outlined),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  const _Label('Usluga'),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final service in ServiceType.values)
-                        ChoiceChip(
-                          avatar: Icon(serviceIcon(service), size: 18),
-                          label: Text(service.label),
-                          selected: service == _service,
-                          onSelected: (_) => _selectService(service),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: _pickDay,
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: isBoarding ? 'Datum predaje' : 'Datum',
-                        suffixIcon: const Icon(Icons.calendar_month_outlined),
+                        child: Text(capitalize(formatLocalDate(_day)), style: theme.textTheme.bodyLarge),
                       ),
-                      child: Text(capitalize(formatLocalDate(_day)), style: theme.textTheme.bodyLarge),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<DateTime>(
-                    // A new day or service brings a new list of starts, so the field starts over.
-                    key: ValueKey((_day, _service)),
-                    initialValue: _start,
-                    items: [for (final start in starts) DropdownMenuItem(value: start, child: Text(formatTime(start)))],
-                    onChanged: (start) => setState(() => _start = start),
-                    validator: _validateStart,
-                    decoration: InputDecoration(
-                      labelText: isBoarding ? 'Vreme predaje' : 'Vreme',
-                      helperText: starts.isEmpty ? const OutsideOpeningHours().message : _periodHint(),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<DateTime>(
+                      // A new day or service brings a new list of starts, so the field starts over.
+                      key: ValueKey((_day, _service)),
+                      initialValue: _start,
+                      items: [
+                        for (final start in starts) DropdownMenuItem(value: start, child: Text(formatTime(start))),
+                      ],
+                      onChanged: (start) => setState(() => _start = start),
+                      validator: _validateStart,
+                      decoration: InputDecoration(
+                        labelText: isBoarding ? 'Vreme predaje' : 'Vreme',
+                        helperText: starts.isEmpty ? const OutsideOpeningHours().message : _periodHint(),
+                      ),
                     ),
-                  ),
-                  if (isBoarding) ...[
+                    if (isBoarding) ...[
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _nightsController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: const InputDecoration(labelText: 'Broj noći'),
+                        validator: _validateNights,
+                        // The pick-up time depends on the nights, so the start is checked again.
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     TextFormField(
-                      controller: _nightsController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(labelText: 'Broj noći'),
-                      validator: _validateNights,
-                      // The pick-up time depends on the nights, so the start is checked again.
-                      onChanged: (_) => setState(() {}),
+                      controller: _noteController,
+                      maxLength: OrderNote.maxLength,
+                      maxLengthEnforcement: MaxLengthEnforcement.none,
+                      minLines: 3,
+                      maxLines: 6,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: const InputDecoration(
+                        labelText: 'Napomena',
+                        hintText: 'Nije obavezna. Na primer ishrana, lekovi ili navike ljubimca.',
+                        alignLabelWithHint: true,
+                      ),
+                      validator: _validateNote,
                     ),
                   ],
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _noteController,
-                    maxLength: OrderNote.maxLength,
-                    maxLengthEnforcement: MaxLengthEnforcement.none,
-                    minLines: 3,
-                    maxLines: 6,
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(
-                      labelText: 'Napomena',
-                      hintText: 'Nije obavezna. Na primer ishrana, lekovi ili navike ljubimca.',
-                      alignLabelWithHint: true,
-                    ),
-                    validator: _validateNote,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Center(
-          heightFactor: 1,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton(onPressed: _submit, child: const Text('Pošalji nalog')),
+        bottomNavigationBar: SafeArea(
+          minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: SizedBox(
+                width: double.infinity,
+                child: BlocBuilder<OrderFormBloc, OrderFormState>(
+                  builder: (context, state) => state is OrderFormSubmitting
+                      ? const FilledButton(onPressed: null, child: Text('Slanje…'))
+                      : FilledButton(onPressed: _submit, child: const Text('Pošalji nalog')),
+                ),
+              ),
             ),
           ),
         ),

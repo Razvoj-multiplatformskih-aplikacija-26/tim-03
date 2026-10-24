@@ -1,8 +1,11 @@
+import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/fake_data.dart';
+import '../dependencies.dart';
 import '../text/serbian.dart';
 
 class PetsScreen extends StatelessWidget {
@@ -10,12 +13,12 @@ class PetsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pets = fakePets.where((pet) => pet.ownerId == currentOwner.id).toList();
+    final owner = context.read<AppDependencies>().owner;
+    final pets = fakePets.where((pet) => pet.ownerId == owner.id).toList();
     return Scaffold(
       appBar: AppBar(title: const Text('Moji ljubimci')),
-      body: ListenableBuilder(
-        listenable: fakeOrders,
-        builder: (context, _) => Center(
+      body: BlocBuilder<MyOrdersBloc, MyOrdersState>(
+        builder: (context, state) => Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 720),
             child: ListView(
@@ -24,10 +27,7 @@ class PetsScreen extends StatelessWidget {
                 for (final pet in pets)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: _PetCard(
-                      pet: pet,
-                      activeOrders: fakeOrders.all.where((order) => order.petId == pet.id && order.isActive).length,
-                    ),
+                    child: _PetCard(pet: pet, activeOrders: _activeOrders(state, pet)),
                   ),
               ],
             ),
@@ -38,11 +38,18 @@ class PetsScreen extends StatelessWidget {
   }
 }
 
+/// Null while the orders are not loaded, so the card does not claim a number it does not know.
+int? _activeOrders(MyOrdersState state, Pet pet) => switch (state) {
+  MyOrdersLoaded(:final orders) => orders.where((order) => order.petId == pet.id && order.isActive).length,
+  MyOrdersEmpty() => 0,
+  MyOrdersLoading() || MyOrdersFailure() => null,
+};
+
 class _PetCard extends StatelessWidget {
   const _PetCard({required this.pet, required this.activeOrders});
 
   final Pet pet;
-  final int activeOrders;
+  final int? activeOrders;
 
   @override
   Widget build(BuildContext context) {
@@ -71,8 +78,10 @@ class _PetCard extends StatelessWidget {
                         Text(pet.name, style: theme.textTheme.titleLarge),
                         const SizedBox(height: 2),
                         Text(pet.description, style: mutedStyle),
-                        const SizedBox(height: 2),
-                        Text(activeOrdersLabel(activeOrders), style: mutedStyle),
+                        if (activeOrders case final count?) ...[
+                          const SizedBox(height: 2),
+                          Text(activeOrdersLabel(count), style: mutedStyle),
+                        ],
                       ],
                     ),
                   ),
