@@ -1,78 +1,77 @@
+import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/fake_center.dart';
 import '../data/fake_data.dart';
+import '../dependencies.dart';
 import '../widgets/order_card.dart';
 
 /// A titled part of one tab, such as the orders that are happening right now.
 typedef _Group = (String title, List<ServiceOrder> orders);
 
-class MyOrdersScreen extends StatefulWidget {
+/// The owner's main flow. The screen only draws the state of [MyOrdersBloc] and sends it events.
+class MyOrdersScreen extends StatelessWidget {
   const MyOrdersScreen({super.key});
 
   @override
-  State<MyOrdersScreen> createState() => _MyOrdersScreenState();
-}
-
-class _MyOrdersScreenState extends State<MyOrdersScreen> {
-  /// Only this pet's orders are shown; null shows the orders of all pets.
-  PetId? _petFilter;
-
-  @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: fakeOrders,
-      builder: (context, _) {
-        final petFilter = _petFilter;
-        final pets = fakePets.where((pet) => pet.ownerId == currentOwner.id).toList();
-        final mine = fakeOrders.all.where((order) => AccessPolicy.canView(currentOwner, order)).toList();
-        final shown = mine.where((order) => petFilter == null || order.petId == petFilter);
-        final current = shown.where((order) => order.isActive).toList()
-          ..sort((a, b) => a.period.start.compareTo(b.period.start));
-        final history = shown.where((order) => !order.isActive).toList()
-          ..sort((a, b) => _closedAt(b).compareTo(_closedAt(a)));
-        final filter = pets.length < 2
-            ? null
-            : _PetFilter(pets: pets, selected: petFilter, onSelected: (id) => setState(() => _petFilter = id));
-        final forPet = petFilter == null ? '' : ' za ljubimca ${petById(petFilter)?.name}';
+    final bloc = context.read<MyOrdersBloc>();
+    final owner = context.read<AppDependencies>().owner;
+    final pets = fakePets.where((pet) => pet.ownerId == owner.id).toList();
+    return BlocBuilder<MyOrdersBloc, MyOrdersState>(
+      builder: (context, state) {
+        final petFilter = switch (state) {
+          MyOrdersLoaded(:final petFilter) => petFilter,
+          MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
+        };
         return DefaultTabController(
           length: 2,
           child: Scaffold(
             appBar: AppBar(
               title: const Text('Moji nalozi'),
-              bottom: mine.isEmpty
-                  ? null
-                  : TabBar(
-                      tabs: [
-                        _TabLabel('Aktuelni', count: current.length),
-                        _TabLabel('Prethodni', count: history.length),
-                      ],
-                    ),
+              actions: [
+                IconButton(
+                  tooltip: 'Osveži',
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => bloc.add(const MyOrdersRequested()),
+                ),
+                const _FakeDataMenu(),
+              ],
+              bottom: switch (state) {
+                MyOrdersLoaded() => TabBar(
+                  tabs: [
+                    _TabLabel('Aktuelni', count: state.current.length),
+                    _TabLabel('Prethodni', count: state.history.length),
+                  ],
+                ),
+                MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
+              },
             ),
             floatingActionButton: FloatingActionButton.extended(
               onPressed: () => context.push(petFilter == null ? '/orders/new' : '/orders/new?pet=${petFilter.value}'),
               icon: const Icon(Icons.add),
               label: const Text('Zakaži uslugu'),
             ),
-            body: mine.isEmpty
-                ? const _EmptyState()
-                : TabBarView(
-                    children: [
-                      _OrderList(
-                        key: const PageStorageKey('current'),
-                        filter: filter,
-                        groups: _currentGroups(current),
-                        emptyText: 'Nema aktuelnih naloga$forPet.',
+            body: switch (state) {
+              MyOrdersLoading() => Center(
+                child: Semantics(label: 'Učitavanje naloga', child: const CircularProgressIndicator()),
+              ),
+              MyOrdersFailure() => _FailureView(onRetry: () => bloc.add(const MyOrdersRequested())),
+              MyOrdersEmpty() => const _EmptyState(),
+              MyOrdersLoaded() => _LoadedBody(
+                state: state,
+                filter: pets.length < 2
+                    ? null
+                    : _PetFilter(
+                        pets: pets,
+                        selected: petFilter,
+                        onSelected: (id) => bloc.add(MyOrdersPetFilterChanged(id)),
                       ),
-                      _OrderList(
-                        key: const PageStorageKey('history'),
-                        filter: filter,
-                        groups: _historyGroups(history),
-                        emptyText: 'Nema prethodnih naloga$forPet.',
-                      ),
-                    ],
-                  ),
+              ),
+            },
           ),
         );
       },
@@ -80,9 +79,38 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   }
 }
 
+class _LoadedBody extends StatelessWidget {
+  const _LoadedBody({required this.state, required this.filter});
+
+  final MyOrdersLoaded state;
+  final Widget? filter;
+
+  @override
+  Widget build(BuildContext context) {
+    final petFilter = state.petFilter;
+    final forPet = petFilter == null ? '' : ' za ljubimca ${petById(petFilter)?.name}';
+    return TabBarView(
+      children: [
+        _OrderList(
+          key: const PageStorageKey('current'),
+          filter: filter,
+          groups: _currentGroups(state.current, now: state.now),
+          emptyText: 'Nema aktuelnih naloga$forPet.',
+        ),
+        _OrderList(
+          key: const PageStorageKey('history'),
+          filter: filter,
+          groups: _historyGroups(state.history),
+          emptyText: 'Nema prethodnih naloga$forPet.',
+        ),
+      ],
+    );
+  }
+}
+
 /// What is happening now first, then what comes this week, then the rest.
-List<_Group> _currentGroups(List<ServiceOrder> orders) {
-  final weekAhead = DateTime.now().add(const Duration(days: 7));
+List<_Group> _currentGroups(List<ServiceOrder> orders, {required DateTime now}) {
+  final weekAhead = now.add(const Duration(days: 7));
   bool isHappening(ServiceOrder order) => order.status is InProgress || order.status is ReadyForPickup;
   final happening = orders.where(isHappening).toList();
   final upcoming = orders.where((order) => !isHappening(order));
@@ -97,12 +125,6 @@ List<_Group> _historyGroups(List<ServiceOrder> orders) => [
   ('Završeni', orders.where((order) => order.status is Completed).toList()),
   ('Otkazani i odbijeni', orders.where((order) => order.status is Rejected || order.status is Cancelled).toList()),
 ];
-
-/// When an order that is over was completed, rejected or cancelled, so the latest news comes first.
-DateTime _closedAt(ServiceOrder order) => switch (order.status) {
-  Completed(:final at) || Rejected(:final at) || Cancelled(:final at) => at,
-  Pending() || Confirmed() || InProgress() || ReadyForPickup() => order.period.end,
-};
 
 class _TabLabel extends StatelessWidget {
   const _TabLabel(this.text, {required this.count});
@@ -262,6 +284,72 @@ class _EmptyState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _FailureView extends StatelessWidget {
+  const _FailureView({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off_outlined, size: 96, color: theme.colorScheme.error),
+            const SizedBox(height: 24),
+            Text('Nalozi nisu učitani.', style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text(
+              'Proverite vezu sa internetom i pokušajte ponovo.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Pokušaj ponovo')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Switches of the fake repository, so every state of the screen can be shown. With a real adapter it disappears.
+class _FakeDataMenu extends StatelessWidget {
+  const _FakeDataMenu();
+
+  void _announce(BuildContext context, String message) => ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(message)));
+
+  @override
+  Widget build(BuildContext context) {
+    final orders = context.read<AppDependencies>().orders;
+    if (orders is! FakeCenter) return const SizedBox.shrink();
+    return PopupMenuButton<void>(
+      tooltip: 'Lažni podaci',
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          onTap: () {
+            orders.failingRequests = 1;
+            _announce(context, 'Sledeći zahtev neće uspeti. Osvežite listu.');
+          },
+          child: const ListTile(leading: Icon(Icons.cloud_off_outlined), title: Text('Simuliraj grešku')),
+        ),
+        PopupMenuItem(
+          onTap: () {
+            orders.emptyResponses = 1;
+            _announce(context, 'Sledeći odgovor biće prazan. Osvežite listu.');
+          },
+          child: const ListTile(leading: Icon(Icons.inbox_outlined), title: Text('Simuliraj prazan odgovor')),
+        ),
+      ],
     );
   }
 }
