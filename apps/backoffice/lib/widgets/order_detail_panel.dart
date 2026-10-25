@@ -88,7 +88,7 @@ class OrderDetailPanel extends StatelessWidget {
                   Expanded(
                     child: Semantics(header: true, child: Text(order.service.label, style: theme.textTheme.titleLarge)),
                   ),
-                  IconButton(tooltip: 'Zatvori detalj', onPressed: onClose, icon: const Icon(Icons.close)),
+                  IconButton(tooltip: 'Zatvori detalj (Esc)', onPressed: onClose, icon: const Icon(Icons.close)),
                 ],
               ),
             ),
@@ -127,17 +127,23 @@ class OrderDetailPanel extends StatelessWidget {
                       const SizedBox(height: 12),
                     ],
                     if (confirm != null)
-                      FilledButton.icon(
-                        onPressed: busy ? null : confirm,
-                        icon: const Icon(Icons.check),
-                        label: const Text('Potvrdi'),
+                      Tooltip(
+                        message: 'Prečica: P',
+                        child: FilledButton.icon(
+                          onPressed: busy ? null : confirm,
+                          icon: const Icon(Icons.check),
+                          label: const Text('Potvrdi'),
+                        ),
                       ),
                     if (confirm != null && reject != null) const SizedBox(height: 8),
                     if (reject != null)
-                      OutlinedButton.icon(
-                        onPressed: busy ? null : reject,
-                        icon: const Icon(Icons.block),
-                        label: const Text('Odbij'),
+                      Tooltip(
+                        message: 'Prečica: O',
+                        child: OutlinedButton.icon(
+                          onPressed: busy ? null : reject,
+                          icon: const Icon(Icons.block),
+                          label: const Text('Odbij'),
+                        ),
                       ),
                   ],
                 ),
