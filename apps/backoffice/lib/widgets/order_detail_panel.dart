@@ -3,13 +3,28 @@ import 'package:flutter/material.dart';
 import 'package:ui/ui.dart';
 import 'package:use_cases/use_cases.dart';
 
-/// The selected order in detail, next to the table.
+/// The selected order in detail, next to the table, with the actions the domain allows.
 class OrderDetailPanel extends StatelessWidget {
-  const OrderDetailPanel({super.key, required this.order, required this.board, required this.onClose});
+  const OrderDetailPanel({
+    super.key,
+    required this.order,
+    required this.board,
+    required this.onClose,
+    this.onConfirm,
+    this.onReject,
+    this.busy = false,
+  });
 
   final ServiceOrder order;
   final CenterBoard board;
   final VoidCallback onClose;
+
+  /// Null when the domain does not offer the action for this order.
+  final VoidCallback? onConfirm;
+  final VoidCallback? onReject;
+
+  /// An action is on its way; the buttons wait for the answer.
+  final bool busy;
 
   String _statusDetail() {
     final isWalk = order.service == ServiceType.walk;
@@ -54,6 +69,8 @@ class OrderDetailPanel extends StatelessWidget {
     final kennel = board.kennelOf(order);
     final assignee = board.assigneeOf(order);
     final note = order.note;
+    final confirm = onConfirm;
+    final reject = onReject;
     return Semantics(
       container: true,
       label: 'Detalj naloga',
@@ -99,6 +116,32 @@ class OrderDetailPanel extends StatelessWidget {
                 ),
               ),
             ),
+            if (confirm != null || reject != null)
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (busy) ...[
+                      Semantics(label: 'Čuvanje u toku', child: const LinearProgressIndicator()),
+                      const SizedBox(height: 12),
+                    ],
+                    if (confirm != null)
+                      FilledButton.icon(
+                        onPressed: busy ? null : confirm,
+                        icon: const Icon(Icons.check),
+                        label: const Text('Potvrdi'),
+                      ),
+                    if (confirm != null && reject != null) const SizedBox(height: 8),
+                    if (reject != null)
+                      OutlinedButton.icon(
+                        onPressed: busy ? null : reject,
+                        icon: const Icon(Icons.block),
+                        label: const Text('Odbij'),
+                      ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
