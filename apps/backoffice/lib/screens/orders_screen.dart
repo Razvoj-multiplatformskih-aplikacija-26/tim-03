@@ -4,14 +4,67 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ui/ui.dart';
 
+import '../shortcuts.dart';
 import '../widgets/order_detail_panel.dart';
 import '../widgets/orders_table.dart';
 import '../widgets/reason_dialog.dart';
 
 /// The staff's main screen: every order of the center in a table, and the chosen one in a side panel. The screen only
-/// draws the state of [OrderBoardBloc] and sends it events.
-class OrdersScreen extends StatelessWidget {
+/// draws the state of [OrderBoardBloc] and sends it events, from the mouse or from the keyboard.
+class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
+
+  @override
+  State<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+class _OrdersScreenState extends State<OrdersScreen> {
+  final _tableFocus = FocusNode(debugLabel: 'orders table');
+
+  OrderBoardBloc get _bloc => context.read<OrderBoardBloc>();
+
+  @override
+  void dispose() {
+    _tableFocus.dispose();
+    super.dispose();
+  }
+
+  ServiceOrder? get _selected => switch (_bloc.state) {
+    OrderBoardLoaded(:final selected) => selected,
+    OrderBoardLoading() || OrderBoardFailure() => null,
+  };
+
+  /// A shortcut works only for an action the domain allows on the selected order, and not while another is on its way.
+  bool _selectedAllows(StaffAction action) {
+    final state = _bloc.state;
+    if (state is! OrderBoardLoaded || state.isBusy) return false;
+    final selected = state.selected;
+    return selected != null && state.actionsFor(selected).contains(action);
+  }
+
+  void _confirm(ServiceOrder order) => _bloc.add(OrderConfirmationRequested(order.id));
+
+  /// A rejection cannot be undone, so it asks for confirmation and a reason first.
+  Future<void> _reject(ServiceOrder order) async {
+    final state = _bloc.state;
+    final pet = state is OrderBoardLoaded ? state.board.petOf(order) : null;
+    final reason = await askRejectionReason(
+      context,
+      orderLabel: '${order.service.label}${pet == null ? '' : ' za ljubimca ${pet.name}'}, ${periodLabel(order)}',
+    );
+    if (!mounted || reason == null) return;
+    _bloc.add(OrderRejectionRequested(order.id, reason: reason));
+  }
+
+  void _select(ServiceOrder order) {
+    _tableFocus.requestFocus();
+    _bloc.add(OrderBoardOrderSelected(order.id));
+  }
+
+  void _closePanel() {
+    _bloc.add(const OrderBoardOrderSelected(null));
+    _tableFocus.requestFocus();
+  }
 
   /// Shown once, then acknowledged so it is not shown again.
   void _showNotice(BuildContext context, OrderBoardNotice notice) {
@@ -27,66 +80,106 @@ class OrdersScreen extends StatelessWidget {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
-    context.read<OrderBoardBloc>().add(const OrderBoardNoticeAcknowledged());
+    _bloc.add(const OrderBoardNoticeAcknowledged());
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bloc = context.read<OrderBoardBloc>();
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Nalozi centra'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Text(
-              '${bloc.staff.name} · ${bloc.staff.role.label}',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
+    final bloc = _bloc;
+    return Shortcuts(
+      shortcuts: orderShortcuts(),
+      child: Actions(
+        actions: {
+          MoveSelectionIntent: CallbackAction<MoveSelectionIntent>(
+            onInvoke: (intent) {
+              bloc.add(OrderBoardSelectionMoved(intent.steps));
+              return null;
+            },
           ),
-        ],
-      ),
-      body: BlocConsumer<OrderBoardBloc, OrderBoardState>(
-        listenWhen: (previous, current) => current is OrderBoardLoaded && current.notice != null,
-        listener: (context, state) => _showNotice(context, (state as OrderBoardLoaded).notice!),
-        builder: (context, state) => switch (state) {
-          OrderBoardLoading() => Center(
-            child: Semantics(label: 'Učitavanje naloga', child: const CircularProgressIndicator()),
+          ClosePanelIntent: GuardedCallbackAction<ClosePanelIntent>(
+            enabled: () => _selected != null,
+            onInvoke: (_) {
+              _closePanel();
+              return null;
+            },
           ),
-          OrderBoardFailure() => Center(
-            child: FailureView(title: 'Nalozi nisu učitani.', onRetry: () => bloc.add(const OrderBoardRequested())),
+          ConfirmSelectedIntent: GuardedCallbackAction<ConfirmSelectedIntent>(
+            enabled: () => _selectedAllows(StaffAction.confirm),
+            onInvoke: (_) {
+              if (_selected case final order?) _confirm(order);
+              return null;
+            },
           ),
-          OrderBoardLoaded(isEmpty: true) => const Center(
-            child: EmptyView(title: 'Nema naloga.', message: 'Nalozi vlasnika pojaviće se ovde.'),
+          RejectSelectedIntent: GuardedCallbackAction<RejectSelectedIntent>(
+            enabled: () => _selectedAllows(StaffAction.reject),
+            onInvoke: (_) {
+              if (_selected case final order?) _reject(order);
+              return null;
+            },
           ),
-          OrderBoardLoaded() => _Board(state: state),
         },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Nalozi centra'),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: Text(
+                  '${bloc.staff.name} · ${bloc.staff.role.label}',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ),
+          body: BlocConsumer<OrderBoardBloc, OrderBoardState>(
+            listenWhen: (previous, current) => current is OrderBoardLoaded && current.notice != null,
+            listener: (context, state) => _showNotice(context, (state as OrderBoardLoaded).notice!),
+            builder: (context, state) => switch (state) {
+              OrderBoardLoading() => Center(
+                child: Semantics(label: 'Učitavanje naloga', child: const CircularProgressIndicator()),
+              ),
+              OrderBoardFailure() => Center(
+                child: FailureView(title: 'Nalozi nisu učitani.', onRetry: () => bloc.add(const OrderBoardRequested())),
+              ),
+              OrderBoardLoaded(isEmpty: true) => const Center(
+                child: EmptyView(title: 'Nema naloga.', message: 'Nalozi vlasnika pojaviće se ovde.'),
+              ),
+              OrderBoardLoaded() => _Board(
+                state: state,
+                tableFocus: _tableFocus,
+                onSelect: _select,
+                onClose: _closePanel,
+                onConfirm: _confirm,
+                onReject: _reject,
+              ),
+            },
+          ),
+        ),
       ),
     );
   }
 }
 
 class _Board extends StatelessWidget {
-  const _Board({required this.state});
+  const _Board({
+    required this.state,
+    required this.tableFocus,
+    required this.onSelect,
+    required this.onClose,
+    required this.onConfirm,
+    required this.onReject,
+  });
 
   final OrderBoardLoaded state;
-
-  /// A rejection cannot be undone, so it asks for confirmation and a reason first.
-  Future<void> _reject(BuildContext context, ServiceOrder order) async {
-    final bloc = context.read<OrderBoardBloc>();
-    final pet = state.board.petOf(order);
-    final reason = await askRejectionReason(
-      context,
-      orderLabel: '${order.service.label}${pet == null ? '' : ' za ljubimca ${pet.name}'}, ${periodLabel(order)}',
-    );
-    if (reason == null) return;
-    bloc.add(OrderRejectionRequested(order.id, reason: reason));
-  }
+  final FocusNode tableFocus;
+  final ValueChanged<ServiceOrder> onSelect;
+  final VoidCallback onClose;
+  final ValueChanged<ServiceOrder> onConfirm;
+  final ValueChanged<ServiceOrder> onReject;
 
   @override
   Widget build(BuildContext context) {
-    final bloc = context.read<OrderBoardBloc>();
     final selected = state.selected;
     final actions = selected == null ? const <StaffAction>{} : state.actionsFor(selected);
     return Row(
@@ -97,7 +190,8 @@ class _Board extends StatelessWidget {
             board: state.board,
             rows: state.rows,
             selectedId: state.selectedId,
-            onSelect: (order) => bloc.add(OrderBoardOrderSelected(order.id)),
+            focusNode: tableFocus,
+            onSelect: onSelect,
           ),
         ),
         if (selected != null) ...[
@@ -107,11 +201,9 @@ class _Board extends StatelessWidget {
             child: OrderDetailPanel(
               order: selected,
               board: state.board,
-              onClose: () => bloc.add(const OrderBoardOrderSelected(null)),
-              onConfirm: actions.contains(StaffAction.confirm)
-                  ? () => bloc.add(OrderConfirmationRequested(selected.id))
-                  : null,
-              onReject: actions.contains(StaffAction.reject) ? () => _reject(context, selected) : null,
+              onClose: onClose,
+              onConfirm: actions.contains(StaffAction.confirm) ? () => onConfirm(selected) : null,
+              onReject: actions.contains(StaffAction.reject) ? () => onReject(selected) : null,
               busy: state.isBusy,
             ),
           ),

@@ -6,44 +6,87 @@ import 'package:use_cases/use_cases.dart';
 /// How wide each column is, in the order of the header.
 const _columnFlex = [3, 2, 3, 3, 3, 3];
 
-/// Every order of the center, one per row. A click selects the order; the selected row stands out.
-class OrdersTable extends StatelessWidget {
+/// Every order of the center, one per row. A click or an arrow key selects an order; the selected row stands out and
+/// stays in view. A frame around the table shows when it has the keyboard focus.
+class OrdersTable extends StatefulWidget {
   const OrdersTable({
     super.key,
     required this.board,
     required this.rows,
     required this.selectedId,
+    required this.focusNode,
     required this.onSelect,
   });
 
   final CenterBoard board;
   final List<ServiceOrder> rows;
   final OrderId? selectedId;
+  final FocusNode focusNode;
   final ValueChanged<ServiceOrder> onSelect;
 
   @override
+  State<OrdersTable> createState() => _OrdersTableState();
+}
+
+class _OrdersTableState extends State<OrdersTable> {
+  final _selectedRow = GlobalKey();
+
+  @override
+  void didUpdateWidget(OrdersTable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedId != widget.selectedId) WidgetsBinding.instance.addPostFrameCallback((_) => _reveal());
+  }
+
+  /// Scrolls only as far as needed to show the whole selected row, above or below.
+  void _reveal() {
+    final row = _selectedRow.currentContext;
+    if (row == null || !row.mounted) return;
+    Scrollable.ensureVisible(row, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd);
+    Scrollable.ensureVisible(row, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const _HeaderRow(),
-        const Divider(height: 1),
-        Expanded(
-          child: ListView.builder(
-            itemCount: rows.length,
-            itemBuilder: (context, index) {
-              final order = rows[index];
-              return _OrderRow(
-                key: ValueKey(order.id),
-                order: order,
-                board: board,
-                selected: order.id == selectedId,
-                onTap: () => onSelect(order),
-              );
-            },
+    final scheme = Theme.of(context).colorScheme;
+    return Focus(
+      focusNode: widget.focusNode,
+      autofocus: true,
+      child: ListenableBuilder(
+        listenable: widget.focusNode,
+        builder: (context, child) => DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: BoxDecoration(
+            border: Border.all(color: widget.focusNode.hasFocus ? scheme.primary : Colors.transparent, width: 2),
           ),
+          child: child,
         ),
-      ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _HeaderRow(),
+            const Divider(height: 1),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final order in widget.rows)
+                      KeyedSubtree(
+                        key: order.id == widget.selectedId ? _selectedRow : ValueKey(order.id),
+                        child: _OrderRow(
+                          order: order,
+                          board: widget.board,
+                          selected: order.id == widget.selectedId,
+                          onTap: () => widget.onSelect(order),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -93,7 +136,7 @@ class _HeaderRow extends StatelessWidget {
 }
 
 class _OrderRow extends StatelessWidget {
-  const _OrderRow({super.key, required this.order, required this.board, required this.selected, required this.onTap});
+  const _OrderRow({required this.order, required this.board, required this.selected, required this.onTap});
 
   final ServiceOrder order;
   final CenterBoard board;
