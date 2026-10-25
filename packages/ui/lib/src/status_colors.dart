@@ -1,25 +1,5 @@
 import 'package:flutter/material.dart';
 
-abstract final class SapaColorSchemes {
-  static const seed = Color(0xFF2A7F74);
-
-  // Teal from the seed, with a warm orange accent for the main action and the pets.
-  static final light = ColorScheme.fromSeed(
-    seedColor: seed,
-    tertiary: const Color(0xFFB8621B),
-    tertiaryContainer: const Color(0xFFFFDCC2),
-    onTertiaryContainer: const Color(0xFF4A2800),
-  );
-
-  static final dark = ColorScheme.fromSeed(
-    seedColor: seed,
-    brightness: Brightness.dark,
-    tertiary: const Color(0xFFF4A261),
-    tertiaryContainer: const Color(0xFF6B3A10),
-    onTertiaryContainer: const Color(0xFFFFDCC2),
-  );
-}
-
 /// Background and text color of one status badge.
 @immutable
 class StatusTone {

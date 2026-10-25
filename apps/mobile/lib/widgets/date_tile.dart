@@ -1,7 +1,6 @@
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
-
-import '../text/serbian.dart';
+import 'package:ui/ui.dart';
 
 /// A small calendar page with the weekday, day and month of [instant] in the center's time zone.
 class DateTile extends StatelessWidget {

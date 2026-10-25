@@ -1,11 +1,9 @@
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
+import 'package:ui/ui.dart';
 
 import '../data/fake_data.dart';
-import '../text/serbian.dart';
 import 'date_tile.dart';
-import 'service_avatar.dart';
-import 'status_badge.dart';
 
 class OrderCard extends StatelessWidget {
   const OrderCard({super.key, required this.order, required this.onOpen});

@@ -3,11 +3,11 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ui/ui.dart';
 
 import '../data/fake_center.dart';
 import '../data/fake_data.dart';
 import '../dependencies.dart';
-import '../text/domain_errors.dart';
 import '../widgets/order_card.dart';
 
 /// A titled part of one tab, such as the orders that are happening right now.
@@ -75,8 +75,15 @@ class MyOrdersScreen extends StatelessWidget {
               MyOrdersLoading() => Center(
                 child: Semantics(label: 'Učitavanje naloga', child: const CircularProgressIndicator()),
               ),
-              MyOrdersFailure() => _FailureView(onRetry: () => bloc.add(const MyOrdersRequested())),
-              MyOrdersEmpty() => const _EmptyState(),
+              MyOrdersFailure() => Center(
+                child: FailureView(title: 'Nalozi nisu učitani.', onRetry: () => bloc.add(const MyOrdersRequested())),
+              ),
+              MyOrdersEmpty() => const Center(
+                child: EmptyView(
+                  title: 'Nemate naloga.',
+                  message: 'Zakažite pansion, kupanje, pregled ili šetnju za svog ljubimca.',
+                ),
+              ),
               MyOrdersLoaded() => _LoadedBody(
                 state: state,
                 filter: pets.length < 2
@@ -270,66 +277,6 @@ class _SectionTitle extends StatelessWidget {
               Text('$count', style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.pets, size: 96, color: theme.colorScheme.primary),
-            const SizedBox(height: 24),
-            Text('Nemate naloga.', style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            Text(
-              'Zakažite pansion, kupanje, pregled ili šetnju za svog ljubimca.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FailureView extends StatelessWidget {
-  const _FailureView({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.cloud_off_outlined, size: 96, color: theme.colorScheme.error),
-            const SizedBox(height: 24),
-            Text('Nalozi nisu učitani.', style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            Text(
-              'Proverite vezu sa internetom i pokušajte ponovo.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Pokušaj ponovo')),
-          ],
         ),
       ),
     );
