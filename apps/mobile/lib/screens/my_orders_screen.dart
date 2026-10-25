@@ -3,12 +3,11 @@ import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ui/ui.dart';
 
 import '../data/fake_center.dart';
-import '../data/fake_data.dart';
+import '../data/seed.dart';
 import '../dependencies.dart';
-import '../text/domain_errors.dart';
-import '../widgets/order_card.dart';
 
 /// A titled part of one tab, such as the orders that are happening right now.
 typedef _Group = (String title, List<ServiceOrder> orders);
@@ -75,8 +74,15 @@ class MyOrdersScreen extends StatelessWidget {
               MyOrdersLoading() => Center(
                 child: Semantics(label: 'Učitavanje naloga', child: const CircularProgressIndicator()),
               ),
-              MyOrdersFailure() => _FailureView(onRetry: () => bloc.add(const MyOrdersRequested())),
-              MyOrdersEmpty() => const _EmptyState(),
+              MyOrdersFailure() => Center(
+                child: FailureView(title: 'Nalozi nisu učitani.', onRetry: () => bloc.add(const MyOrdersRequested())),
+              ),
+              MyOrdersEmpty() => const Center(
+                child: EmptyView(
+                  title: 'Nemate naloga.',
+                  message: 'Zakažite pansion, kupanje, pregled ili šetnju za svog ljubimca.',
+                ),
+              ),
               MyOrdersLoaded() => _LoadedBody(
                 state: state,
                 filter: pets.length < 2
@@ -244,7 +250,150 @@ class _OrderTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: OrderCard(order: order, onOpen: () => context.push('/orders/${order.id.value}')),
+      child: _OrderCard(order: order, onOpen: () => context.push('/orders/${order.id.value}')),
+    );
+  }
+}
+
+class _OrderCard extends StatelessWidget {
+  const _OrderCard({required this.order, required this.onOpen});
+
+  final ServiceOrder order;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final now = DateTime.now();
+    final pet = petById(order.petId);
+    final start = order.period.start;
+    final reason = switch (order.status) {
+      Rejected(:final reason) || Cancelled(:final reason) when reason.isNotEmpty => reason,
+      _ => null,
+    };
+    return Card(
+      child: InkWell(
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: MergeSemantics(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _DateTile(instant: start, today: centerDay(start) == centerDay(now), muted: !order.isActive),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(serviceIcon(order.service), size: 18, color: scheme.primary),
+                          const SizedBox(width: 6),
+                          Expanded(child: Text(order.service.label, style: theme.textTheme.titleMedium)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 14,
+                        runSpacing: 4,
+                        children: [
+                          if (pet != null) _Detail(icon: Icons.pets, iconColor: scheme.tertiary, text: pet.name),
+                          _Detail(
+                            icon: order.service.visitLength == null ? Icons.nights_stay_outlined : Icons.schedule,
+                            text: timeLabel(order, now: now),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      StatusBadge(status: order.status, service: order.service),
+                      if (reason != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          reason,
+                          style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A small calendar page with the weekday, day and month of [instant] in the center's time zone.
+class _DateTile extends StatelessWidget {
+  const _DateTile({required this.instant, this.today = false, this.muted = false});
+
+  final DateTime instant;
+
+  /// Drawn in the primary color, so today's orders stand out.
+  final bool today;
+
+  /// Drawn in grey, for orders that are over.
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final (background, foreground) = switch ((today, muted)) {
+      (true, _) => (scheme.primary, scheme.onPrimary),
+      (false, true) => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
+      (false, false) => (scheme.secondaryContainer, scheme.onSecondaryContainer),
+    };
+    final smallStyle = theme.textTheme.labelSmall?.copyWith(color: foreground, letterSpacing: 0.8);
+    return Semantics(
+      label: capitalize(formatDate(instant)),
+      excludeSemantics: true,
+      child: Container(
+        width: 56,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(14)),
+        child: Column(
+          children: [
+            Text(formatWeekdayShort(instant).toUpperCase(), style: smallStyle),
+            Text(
+              '${centerTime(instant).day}',
+              style: theme.textTheme.headlineSmall?.copyWith(color: foreground, fontWeight: FontWeight.w700),
+            ),
+            Text(formatMonthShort(instant).toUpperCase(), style: smallStyle),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Detail extends StatelessWidget {
+  const _Detail({required this.icon, required this.text, this.iconColor});
+
+  final IconData icon;
+  final String text;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: iconColor ?? muted),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(text, style: theme.textTheme.bodyMedium?.copyWith(color: muted)),
+        ),
+      ],
     );
   }
 }
@@ -270,66 +419,6 @@ class _SectionTitle extends StatelessWidget {
               Text('$count', style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.pets, size: 96, color: theme.colorScheme.primary),
-            const SizedBox(height: 24),
-            Text('Nemate naloga.', style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            Text(
-              'Zakažite pansion, kupanje, pregled ili šetnju za svog ljubimca.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FailureView extends StatelessWidget {
-  const _FailureView({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.cloud_off_outlined, size: 96, color: theme.colorScheme.error),
-            const SizedBox(height: 24),
-            Text('Nalozi nisu učitani.', style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            Text(
-              'Proverite vezu sa internetom i pokušajte ponovo.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Pokušaj ponovo')),
-          ],
         ),
       ),
     );

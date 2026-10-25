@@ -2,13 +2,10 @@ import 'package:blocs/blocs.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ui/ui.dart';
 
-import '../data/fake_data.dart';
+import '../data/seed.dart';
 import '../dependencies.dart';
-import '../text/domain_errors.dart';
-import '../text/serbian.dart';
-import '../widgets/service_avatar.dart';
-import '../widgets/status_badge.dart';
 
 /// Draws one order from the state of [MyOrdersBloc], so the list and the detail always show the same data.
 class OrderDetailScreen extends StatelessWidget {

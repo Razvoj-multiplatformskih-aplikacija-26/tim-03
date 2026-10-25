@@ -4,13 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ui/ui.dart';
 import 'package:use_cases/use_cases.dart';
 
-import '../data/fake_data.dart';
+import '../data/seed.dart';
 import '../dependencies.dart';
-import '../text/domain_errors.dart';
-import '../text/serbian.dart';
-import '../widgets/service_avatar.dart';
 
 /// Every check in this form is a call into the domain: R1 note, R2 nights, R3 period while typing. The order is sent
 /// through [OrderFormBloc], and the repository decides R6 over every order.

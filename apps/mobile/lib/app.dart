@@ -2,11 +2,11 @@ import 'package:blocs/blocs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:ui/ui.dart';
 import 'package:use_cases/use_cases.dart';
 
 import 'dependencies.dart';
 import 'router.dart';
-import 'theme/theme.dart';
 
 class SapaApp extends StatelessWidget {
   const SapaApp({super.key, required this.dependencies});

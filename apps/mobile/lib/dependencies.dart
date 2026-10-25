@@ -2,7 +2,7 @@ import 'package:domain/domain.dart';
 import 'package:use_cases/use_cases.dart';
 
 import 'data/fake_center.dart';
-import 'data/fake_data.dart';
+import 'data/seed.dart';
 
 /// Everything the blocs get from outside, made in one place at start-up. The screens never learn which
 /// implementation of the port they got, so swapping it changes only this file.

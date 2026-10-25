@@ -1,7 +1,7 @@
 import 'package:domain/domain.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/fake_center.dart';
-import 'package:mobile/data/fake_data.dart';
+import 'package:mobile/data/seed.dart';
 import 'package:use_cases/use_cases.dart';
 
 void main() {

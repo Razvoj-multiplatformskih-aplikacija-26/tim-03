@@ -1,7 +1,7 @@
 import 'package:domain/domain.dart';
 import 'package:use_cases/use_cases.dart';
 
-import 'fake_data.dart';
+import 'seed.dart';
 
 /// The app's fake implementation of the port: orders in memory, a delay like a real network, and switches that make
 /// the next request fail or come back empty, so every state of the screen can be shown. From KT2 an HTTP adapter

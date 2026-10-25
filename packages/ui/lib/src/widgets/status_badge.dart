@@ -1,8 +1,8 @@
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 
+import '../status_colors.dart';
 import '../text/serbian.dart';
-import '../theme/theme.dart';
 
 class StatusBadge extends StatelessWidget {
   const StatusBadge({super.key, required this.status, required this.service});

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/app.dart';
 import 'package:mobile/dependencies.dart';
-import 'package:mobile/widgets/order_card.dart';
 
 void main() {
   setUpAll(initializeDomainTimeZones);
@@ -37,7 +36,8 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Mica'));
     await tester.pumpAndSettle();
 
-    Finder onCards(String text) => find.descendant(of: find.byType(OrderCard), matching: find.text(text));
+    // Every card on the list is an order card; the filter chips that also show pet names are not cards.
+    Finder onCards(String text) => find.descendant(of: find.byType(Card), matching: find.text(text));
     expect(onCards('Mica'), findsWidgets);
     expect(onCards('Reks'), findsNothing);
     expect(onCards('Bobi'), findsNothing);
