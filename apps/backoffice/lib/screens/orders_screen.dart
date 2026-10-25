@@ -6,6 +6,7 @@ import 'package:ui/ui.dart';
 
 import '../shortcuts.dart';
 import '../widgets/order_detail_panel.dart';
+import '../widgets/orders_list.dart';
 import '../widgets/orders_table.dart';
 import '../widgets/reason_dialog.dart';
 
@@ -19,13 +20,13 @@ class OrdersScreen extends StatefulWidget {
 }
 
 class _OrdersScreenState extends State<OrdersScreen> {
-  final _tableFocus = FocusNode(debugLabel: 'orders table');
+  final _ordersFocus = FocusNode(debugLabel: 'orders');
 
   OrderBoardBloc get _bloc => context.read<OrderBoardBloc>();
 
   @override
   void dispose() {
-    _tableFocus.dispose();
+    _ordersFocus.dispose();
     super.dispose();
   }
 
@@ -57,13 +58,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   void _select(ServiceOrder order) {
-    _tableFocus.requestFocus();
+    _ordersFocus.requestFocus();
     _bloc.add(OrderBoardOrderSelected(order.id));
   }
 
   void _closePanel() {
     _bloc.add(const OrderBoardOrderSelected(null));
-    _tableFocus.requestFocus();
+    _ordersFocus.requestFocus();
   }
 
   /// Shown once, then acknowledged so it is not shown again.
@@ -147,7 +148,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
               OrderBoardLoaded() => _Board(
                 state: state,
-                tableFocus: _tableFocus,
+                ordersFocus: _ordersFocus,
                 onSelect: _select,
                 onClose: _closePanel,
                 onConfirm: _confirm,
@@ -164,7 +165,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 class _Board extends StatelessWidget {
   const _Board({
     required this.state,
-    required this.tableFocus,
+    required this.ordersFocus,
     required this.onSelect,
     required this.onClose,
     required this.onConfirm,
@@ -172,7 +173,7 @@ class _Board extends StatelessWidget {
   });
 
   final OrderBoardLoaded state;
-  final FocusNode tableFocus;
+  final FocusNode ordersFocus;
   final ValueChanged<ServiceOrder> onSelect;
   final VoidCallback onClose;
   final ValueChanged<ServiceOrder> onConfirm;
@@ -182,33 +183,59 @@ class _Board extends StatelessWidget {
   Widget build(BuildContext context) {
     final selected = state.selected;
     final actions = selected == null ? const <StaffAction>{} : state.actionsFor(selected);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: OrdersTable(
+    final panel = selected == null
+        ? null
+        : OrderDetailPanel(
+            order: selected,
             board: state.board,
-            rows: state.rows,
-            selectedId: state.selectedId,
-            focusNode: tableFocus,
-            onSelect: onSelect,
-          ),
-        ),
-        if (selected != null) ...[
-          const VerticalDivider(width: 1),
-          SizedBox(
-            width: 360,
-            child: OrderDetailPanel(
-              order: selected,
-              board: state.board,
-              onClose: onClose,
-              onConfirm: actions.contains(StaffAction.confirm) ? () => onConfirm(selected) : null,
-              onReject: actions.contains(StaffAction.reject) ? () => onReject(selected) : null,
-              busy: state.isBusy,
+            onClose: onClose,
+            onConfirm: actions.contains(StaffAction.confirm) ? () => onConfirm(selected) : null,
+            onReject: actions.contains(StaffAction.reject) ? () => onReject(selected) : null,
+            busy: state.isBusy,
+          );
+    // The layout follows the width the screen gets. The selection lives in the bloc above this builder, so changing
+    // the layout keeps it.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < _tableFromWidth) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: OrdersList(
+                  board: state.board,
+                  rows: state.rows,
+                  selectedId: state.selectedId,
+                  focusNode: ordersFocus,
+                  onSelect: onSelect,
+                ),
+              ),
+              if (panel != null) ...[
+                const Divider(height: 1),
+                SizedBox(height: constraints.maxHeight / 2, child: panel),
+              ],
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: OrdersTable(
+                board: state.board,
+                rows: state.rows,
+                selectedId: state.selectedId,
+                focusNode: ordersFocus,
+                onSelect: onSelect,
+              ),
             ),
-          ),
-        ],
-      ],
+            if (panel != null) ...[const VerticalDivider(width: 1), SizedBox(width: 360, child: panel)],
+          ],
+        );
+      },
     );
   }
 }
+
+/// Below this width the table gives way to a list, and the side panel moves under it.
+const _tableFromWidth = 900.0;

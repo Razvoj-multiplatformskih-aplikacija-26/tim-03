@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:ui/ui.dart';
 import 'package:use_cases/use_cases.dart';
 
+import 'focus_frame.dart';
+import 'order_labels.dart';
+
 /// How wide each column is, in the order of the header.
 const _columnFlex = [3, 2, 3, 3, 3, 3];
 
@@ -31,6 +34,13 @@ class OrdersTable extends StatefulWidget {
 class _OrdersTableState extends State<OrdersTable> {
   final _selectedRow = GlobalKey();
 
+  /// A wider window builds the table anew; it opens on the order that was selected in the list.
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reveal());
+  }
+
   @override
   void didUpdateWidget(OrdersTable oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -47,45 +57,33 @@ class _OrdersTableState extends State<OrdersTable> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Focus(
+    return FocusFrame(
       focusNode: widget.focusNode,
-      autofocus: true,
-      child: ListenableBuilder(
-        listenable: widget.focusNode,
-        builder: (context, child) => DecoratedBox(
-          position: DecorationPosition.foreground,
-          decoration: BoxDecoration(
-            border: Border.all(color: widget.focusNode.hasFocus ? scheme.primary : Colors.transparent, width: 2),
-          ),
-          child: child,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const _HeaderRow(),
-            const Divider(height: 1),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final order in widget.rows)
-                      KeyedSubtree(
-                        key: order.id == widget.selectedId ? _selectedRow : ValueKey(order.id),
-                        child: _OrderRow(
-                          order: order,
-                          board: widget.board,
-                          selected: order.id == widget.selectedId,
-                          onTap: () => widget.onSelect(order),
-                        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _HeaderRow(),
+          const Divider(height: 1),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final order in widget.rows)
+                    KeyedSubtree(
+                      key: order.id == widget.selectedId ? _selectedRow : ValueKey(order.id),
+                      child: _OrderRow(
+                        order: order,
+                        board: widget.board,
+                        selected: order.id == widget.selectedId,
+                        onTap: () => widget.onSelect(order),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -150,21 +148,11 @@ class _OrderRow extends StatelessWidget {
     return '—';
   }
 
-  /// The hours of a visit, or the hand-over time and the nights of a stay.
-  String _hours() {
-    final period = order.period;
-    return switch (order.service.visitLength) {
-      null => '${formatTime(period.start)} · ${nightsLabel(nightsOf(period))}',
-      _ => '${formatTime(period.start)}–${formatTime(period.end)}',
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final muted = theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
-    final start = order.period.start;
     return Material(
       color: selected ? scheme.secondaryContainer : Colors.transparent,
       child: InkWell(
@@ -176,8 +164,8 @@ class _OrderRow extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${capitalize(formatWeekdayShort(start))} ${formatShortDate(start)}'),
-                  Text(_hours(), style: muted),
+                  Text(orderDayLabel(order)),
+                  Text(orderHoursLabel(order), style: muted),
                 ],
               ),
               Text(board.petOf(order)?.name ?? '—', overflow: TextOverflow.ellipsis),
