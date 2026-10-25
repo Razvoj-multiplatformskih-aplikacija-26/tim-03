@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ui/ui.dart';
 
-import '../data/fake_data.dart';
+import '../data/seed.dart';
 import '../dependencies.dart';
 
 /// Draws one order from the state of [MyOrdersBloc], so the list and the detail always show the same data.

@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
 import 'package:use_cases/use_cases.dart';
 
-import '../data/fake_data.dart';
+import '../data/seed.dart';
 import '../dependencies.dart';
 
 /// Every check in this form is a call into the domain: R1 note, R2 nights, R3 period while typing. The order is sent
