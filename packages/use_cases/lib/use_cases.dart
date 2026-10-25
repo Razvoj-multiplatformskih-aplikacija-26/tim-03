@@ -1,7 +1,12 @@
 export 'src/cancel_order.dart';
+export 'src/center_board.dart';
 export 'src/clock.dart';
+export 'src/confirm_order.dart';
+export 'src/get_center_board.dart';
 export 'src/get_my_orders.dart';
 export 'src/order_request.dart';
 export 'src/place_order.dart';
+export 'src/ports/board_repository.dart';
 export 'src/ports/order_repository.dart';
+export 'src/reject_order.dart';
 export 'src/repository_exception.dart';
