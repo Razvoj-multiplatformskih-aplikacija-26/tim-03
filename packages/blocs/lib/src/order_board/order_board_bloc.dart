@@ -62,15 +62,27 @@ final class OrderBoardBloc extends Bloc<OrderBoardEvent, OrderBoardState> {
     try {
       result = await action();
     } on RepositoryException catch (cause) {
-      emit(current.copyWith(notice: StaffActionFailed(cause)));
+      _finish(emit, StaffActionFailed(cause));
       return;
     }
     switch (result) {
       case Success(:final value):
-        await _load(emit, selectedId: current.selectedId, notice: StaffActionSucceeded(value));
+        await _load(emit, selectedId: _selectedId, notice: StaffActionSucceeded(value));
       case Failure(:final error):
-        emit(current.copyWith(notice: StaffActionRejected(error)));
+        _finish(emit, StaffActionRejected(error));
     }
+  }
+
+  /// The selection as it is now; staff may have moved it while the action was on its way.
+  OrderId? get _selectedId => switch (state) {
+    OrderBoardLoaded(:final selectedId) => selectedId,
+    OrderBoardLoading() || OrderBoardFailure() => null,
+  };
+
+  /// Ends the action in flight on the latest state, so a selection made meanwhile stays.
+  void _finish(Emitter<OrderBoardState> emit, OrderBoardNotice notice) {
+    final latest = state;
+    if (latest is OrderBoardLoaded) emit(latest.copyWith(clearInFlight: true, notice: notice));
   }
 
   Future<void> _load(Emitter<OrderBoardState> emit, {OrderId? selectedId, OrderBoardNotice? notice}) async {

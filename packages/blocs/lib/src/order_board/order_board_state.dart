@@ -72,18 +72,19 @@ final class OrderBoardLoaded extends OrderBoardState {
 
   Set<StaffAction> actionsFor(ServiceOrder order) => actions[order.id] ?? const {};
 
-  /// Every copy ends the action in flight unless it names one.
+  /// Every copy keeps the action in flight, so moving the selection meanwhile does not unlock another action.
   OrderBoardLoaded copyWith({
     OrderId? selectedId,
     bool clearSelection = false,
     OrderId? inFlightId,
+    bool clearInFlight = false,
     OrderBoardNotice? notice,
     bool clearNotice = false,
   }) => OrderBoardLoaded(
     board: board,
     actions: actions,
     selectedId: clearSelection ? null : (selectedId ?? this.selectedId),
-    inFlightId: inFlightId,
+    inFlightId: clearInFlight ? null : (inFlightId ?? this.inFlightId),
     notice: clearNotice ? null : (notice ?? this.notice),
   );
 }
