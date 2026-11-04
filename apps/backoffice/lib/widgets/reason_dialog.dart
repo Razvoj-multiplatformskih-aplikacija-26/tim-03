@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Asks why an order is rejected, since a rejection cannot be undone. Returns the reason, or null if staff change
-/// their mind.
+
 Future<String?> askRejectionReason(BuildContext context, {required String orderLabel}) {
   return showDialog<String>(
     context: context,

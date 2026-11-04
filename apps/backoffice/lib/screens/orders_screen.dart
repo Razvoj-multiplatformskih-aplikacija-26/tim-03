@@ -10,8 +10,6 @@ import '../widgets/orders_list.dart';
 import '../widgets/orders_table.dart';
 import '../widgets/reason_dialog.dart';
 
-/// The staff's main screen: every order of the center in a table, and the chosen one in a side panel. The screen only
-/// draws the state of [OrderBoardBloc] and sends it events, from the mouse or from the keyboard.
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
 
@@ -35,7 +33,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     OrderBoardLoading() || OrderBoardFailure() => null,
   };
 
-  /// A shortcut works only for an action the domain allows on the selected order, and not while another is on its way.
   bool _selectedAllows(StaffAction action) {
     final state = _bloc.state;
     if (state is! OrderBoardLoaded || state.isBusy) return false;
@@ -45,7 +42,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   void _confirm(ServiceOrder order) => _bloc.add(OrderConfirmationRequested(order.id));
 
-  /// A rejection cannot be undone, so it asks for confirmation and a reason first.
   Future<void> _reject(ServiceOrder order) async {
     final state = _bloc.state;
     final pet = state is OrderBoardLoaded ? state.board.petOf(order) : null;
@@ -67,7 +63,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
     _ordersFocus.requestFocus();
   }
 
-  /// Shown once, then acknowledged so it is not shown again.
   void _showNotice(BuildContext context, OrderBoardNotice notice) {
     final message = switch (notice) {
       StaffActionSucceeded(:final order) => switch (order.status) {
@@ -193,8 +188,6 @@ class _Board extends StatelessWidget {
             onReject: actions.contains(StaffAction.reject) ? () => onReject(selected) : null,
             busy: state.isBusy,
           );
-    // The layout follows the width the screen gets. The selection lives in the bloc above this builder, so changing
-    // the layout keeps it.
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < _tableFromWidth) {
@@ -237,5 +230,4 @@ class _Board extends StatelessWidget {
   }
 }
 
-/// Below this width the table gives way to a list, and the side panel moves under it.
 const _tableFromWidth = 900.0;

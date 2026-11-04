@@ -1,6 +1,6 @@
 import 'package:domain/domain.dart';
 
-/// The one signed-in user of the app. Signing in arrives with the server in KT2.
+
 const currentOwner = User(id: UserId('u-owner'), name: 'Jelena Marković', role: Role.owner);
 
 const _caretaker = User(id: UserId('u-caretaker'), name: 'Marija Ilić', role: Role.caretaker);
@@ -22,7 +22,6 @@ const fakePets = [
   Pet(id: PetId('p-bobi'), ownerId: UserId('u-owner'), name: 'Bobi', species: Species.dog, size: PetSize.medium),
 ];
 
-/// Monday to Friday 8–20, Saturday 9–15, closed on Sunday.
 final centerOpeningHours = OpeningHours({
   DateTime.monday: const DayHours(open: LocalTime(8, 0), close: LocalTime(20, 0)),
   DateTime.tuesday: const DayHours(open: LocalTime(8, 0), close: LocalTime(20, 0)),
@@ -38,13 +37,11 @@ User? staffById(UserId id) => fakeStaff.where((user) => user.id == id).firstOrNu
 
 Kennel? kennelById(KennelId id) => fakeKennels.where((kennel) => kennel.id == id).firstOrNull;
 
-/// Twelve orders around [now], at least one in each of the seven states. FakeCenter starts with them.
 List<ServiceOrder> seedOrders(DateTime now) {
   final hours = centerOpeningHours;
   final today = centerDay(now);
   final [rex, mica, bobi] = fakePets;
 
-  // A day the center is open, [offset] days from today. Closed days move away from today.
   DateTime day(int offset) {
     var date = DateTime(today.year, today.month, today.day + offset);
     while (!hours.isOpenOn(date.weekday)) {
@@ -69,7 +66,6 @@ List<ServiceOrder> seedOrders(DateTime now) {
     return ServicePeriod.existing(start: start, end: end);
   }
 
-  // The first vet checkup a few hours from now, so one confirmed order is usually too close to cancel.
   DateTime soon() {
     for (var offset = 0; offset < 7; offset++) {
       final date = DateTime(today.year, today.month, today.day + offset);

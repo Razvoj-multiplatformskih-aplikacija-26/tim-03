@@ -7,7 +7,6 @@ import 'package:ui/ui.dart';
 import '../data/seed.dart';
 import '../dependencies.dart';
 
-/// Draws one order from the state of [MyOrdersBloc], so the list and the detail always show the same data.
 class OrderDetailScreen extends StatelessWidget {
   const OrderDetailScreen({super.key, required this.id});
 
@@ -29,8 +28,6 @@ class OrderDetailScreen extends StatelessWidget {
   }
 }
 
-/// Asks for confirmation, then hands the cancellation to the bloc. The bloc lets the domain decide and reports the
-/// result as a notice, which the orders screen shows.
 Future<void> confirmAndCancel(BuildContext context, ServiceOrder order) async {
   final bloc = context.read<MyOrdersBloc>();
   final pet = petById(order.petId);
@@ -58,7 +55,6 @@ class _DetailBody extends StatelessWidget {
   final ServiceOrder order;
   final MyOrdersLoaded state;
 
-  /// The bloc has already asked the domain whether the owner may cancel; the screen only shows the answer.
   Widget? _cancelBar(BuildContext context) {
     if (state.isCancelling(order)) return const _CancelBar(onCancel: null, busy: true);
     if (state.canCancel(order)) {
@@ -230,7 +226,6 @@ class _CancelBar extends StatelessWidget {
   final VoidCallback? onCancel;
   final String? hint;
 
-  /// The cancellation is on its way; the button waits for the answer.
   final bool busy;
 
   @override

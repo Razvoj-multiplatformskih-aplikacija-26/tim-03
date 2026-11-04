@@ -1,7 +1,5 @@
 import 'package:bloc/bloc.dart';
 
-/// Writes one line when a bloc is created or closed, and one for every transition: the bloc, the event and the new
-/// state. The apps turn it on in debug builds; the same lines show in the terminal and in the browser console.
 final class ConsoleBlocObserver extends BlocObserver {
   const ConsoleBlocObserver(this.log);
 

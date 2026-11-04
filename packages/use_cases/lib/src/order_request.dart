@@ -1,7 +1,6 @@
 import 'package:domain/domain.dart';
 import 'package:meta/meta.dart';
 
-/// Everything an owner asks for in a new order. The repository gives the order its id.
 @immutable
 final class OrderRequest {
   const OrderRequest({required this.owner, required this.pet, required this.service, required this.period, this.note});

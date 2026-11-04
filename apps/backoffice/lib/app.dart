@@ -31,7 +31,6 @@ class _BackofficeAppState extends State<BackofficeApp> {
   @override
   Widget build(BuildContext context) {
     final dependencies = widget.dependencies;
-    // Above the router, so the screen and its dialogs see the same bloc.
     return BlocProvider(
       create: (_) => OrderBoardBloc(
         getCenterBoard: dependencies.getCenterBoard,

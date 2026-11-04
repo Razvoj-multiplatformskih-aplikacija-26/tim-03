@@ -47,7 +47,6 @@ String _time(DateTime date) => '${_twoDigits(date.hour)}:${_twoDigits(date.minut
 
 String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
-/// A calendar day that is already in the center's time zone, such as a day picked in the form.
 String formatLocalDate(DateTime localDate) => _longDate(localDate);
 
 String formatTime(DateTime instant) => _time(centerTime(instant));
@@ -62,7 +61,6 @@ String formatWeekdayShort(DateTime instant) => _weekdaysShort[centerTime(instant
 
 String formatMonthShort(DateTime instant) => _monthsShort[centerTime(instant).month - 1];
 
-/// 'Danas', 'Sutra' or 'Juče' when [instant] falls on one of those days in the center, otherwise null.
 String? relativeDayLabel(DateTime instant, {required DateTime now}) {
   final day = centerDay(instant);
   final today = centerDay(now);
@@ -82,14 +80,12 @@ String? relativeDayLabel(DateTime instant, {required DateTime now}) {
 
 String capitalize(String text) => text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 
-/// Whole nights between handing a pet over and picking it up, counted in the center's calendar.
 int nightsOf(ServicePeriod period) {
   final start = centerTime(period.start);
   final end = centerTime(period.end);
   return DateTime.utc(end.year, end.month, end.day).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
 }
 
-/// When the order takes place, in one line.
 String periodLabel(ServiceOrder order) {
   final period = order.period;
   return switch (order.service) {
@@ -100,7 +96,6 @@ String periodLabel(ServiceOrder order) {
   };
 }
 
-/// When the order takes place, for a card that already shows the day it starts.
 String timeLabel(ServiceOrder order, {required DateTime now}) {
   final period = order.period;
   if (order.service.visitLength == null) {
@@ -146,7 +141,6 @@ extension PetText on Pet {
   }
 }
 
-/// A walk ends at the owner's door, so its last two states read differently.
 String statusLabel(OrderStatus status, ServiceType service) {
   final isWalk = service == ServiceType.walk;
   return switch (status) {

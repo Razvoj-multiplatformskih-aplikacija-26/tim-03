@@ -2,8 +2,6 @@ import 'package:domain/domain.dart';
 
 import 'serbian.dart';
 
-/// The only place that turns a domain error into text. Numbers come from the domain constants, so changing a rule
-/// changes the message too.
 extension DomainErrorMessage on DomainError {
   String get message => switch (this) {
     NoteTooLong() => 'Napomena može imati najviše ${OrderNote.maxLength} znakova.',

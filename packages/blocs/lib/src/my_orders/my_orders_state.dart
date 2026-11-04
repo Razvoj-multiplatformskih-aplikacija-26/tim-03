@@ -14,7 +14,6 @@ final class MyOrdersLoading extends MyOrdersState {
   const MyOrdersLoading();
 }
 
-/// The orders could not be loaded; the screen offers "Pokušaj ponovo".
 final class MyOrdersFailure extends MyOrdersState {
   const MyOrdersFailure(this.cause);
 
@@ -27,7 +26,6 @@ final class MyOrdersFailure extends MyOrdersState {
   String toString() => 'MyOrdersFailure($cause)';
 }
 
-/// The owner has no orders at all.
 final class MyOrdersEmpty extends MyOrdersState {
   const MyOrdersEmpty();
 }
@@ -43,25 +41,18 @@ final class MyOrdersLoaded extends MyOrdersState {
     this.notice,
   });
 
-  /// Every order of the owner, whatever the filter, earliest start first.
   final List<ServiceOrder> orders;
 
-  /// When the orders were loaded; the screen measures "today" and "this week" from it.
   final DateTime now;
 
-  /// Orders the domain lets the owner cancel now.
   final Set<OrderId> cancellable;
 
-  /// Orders the owner could cancel if the deadline had not passed (R4).
   final Set<OrderId> tooLateToCancel;
 
-  /// Only this pet's orders are shown; null shows every pet.
   final PetId? petFilter;
 
-  /// The order whose cancellation is in flight.
   final OrderId? cancellingId;
 
-  /// Something the screen shows once, then acknowledges.
   final MyOrdersNotice? notice;
 
   @override
@@ -81,13 +72,11 @@ final class MyOrdersLoaded extends MyOrdersState {
     return petFilter == null ? orders : orders.where((order) => order.petId == petFilter);
   }
 
-  /// Active orders of the shown pets, earliest start first.
   List<ServiceOrder> get current => [
     for (final order in _shown)
       if (order.isActive) order,
   ];
 
-  /// Finished orders of the shown pets, the latest news first.
   List<ServiceOrder> get history => [
     for (final order in _shown)
       if (!order.isActive) order,
@@ -131,7 +120,6 @@ final class MyOrdersLoaded extends MyOrdersState {
   );
 }
 
-/// When an order that is over was completed, rejected or cancelled.
 DateTime _closedAt(ServiceOrder order) => switch (order.status) {
   Completed(:final at) || Rejected(:final at) || Cancelled(:final at) => at,
   Pending() || Confirmed() || InProgress() || ReadyForPickup() => order.period.end,
@@ -153,7 +141,6 @@ final class OrderCancelled extends MyOrdersNotice {
   List<Object?> get props => [order];
 }
 
-/// The domain said no, for example because the deadline has passed.
 final class CancellationRejected extends MyOrdersNotice {
   const CancellationRejected(this.error);
 
@@ -163,7 +150,6 @@ final class CancellationRejected extends MyOrdersNotice {
   List<Object?> get props => [error];
 }
 
-/// The repository could not be reached.
 final class CancellationFailed extends MyOrdersNotice {
   const CancellationFailed(this.cause);
 

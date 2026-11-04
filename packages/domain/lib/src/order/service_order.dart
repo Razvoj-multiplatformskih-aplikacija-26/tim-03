@@ -6,7 +6,6 @@ import 'order_status.dart';
 import 'service_period.dart';
 import 'service_type.dart';
 
-/// An owner's order for one service for one pet, the main concept of the system.
 @immutable
 final class ServiceOrder {
   const ServiceOrder({
@@ -29,10 +28,8 @@ final class ServiceOrder {
   final ServicePeriod period;
   final OrderNote? note;
 
-  /// Set on confirmation for boarding.
   final KennelId? kennelId;
 
-  /// Set on confirmation for every service except boarding.
   final UserId? assigneeId;
   final OrderStatus status;
   final DateTime createdAt;

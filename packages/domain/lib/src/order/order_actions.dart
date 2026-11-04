@@ -44,7 +44,7 @@ Result<ServiceOrder> placeOrder({
   );
 }
 
-/// Confirms the order and reserves what it needs: a kennel for boarding, a member of staff for everything else.
+
 Result<ServiceOrder> confirmOrder(
   ServiceOrder order, {
   required User by,
@@ -83,7 +83,7 @@ Result<ServiceOrder> cancelOrder(ServiceOrder order, {required User by, required
   return Success(order.copyWith(status: next));
 }
 
-/// The pet arrives in the center, or the walker picks it up.
+
 Result<ServiceOrder> startOrder(ServiceOrder order, {required User by, required DateTime now}) {
   if (!AccessPolicy.canHandlePet(by)) return const Failure(NotAllowed());
   return _transition(order, InProgress(receivedBy: by.id, at: now.toUtc()));

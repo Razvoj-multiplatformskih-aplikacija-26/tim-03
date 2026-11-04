@@ -12,17 +12,14 @@ final class ServicePeriod {
 
   ServicePeriod.existing({required DateTime start, required DateTime end}) : this._(start.toUtc(), end.toUtc());
 
-  /// Services start on the full hour or half hour. Handing a boarded pet over or back takes one step as well.
   static const step = Duration(minutes: 30);
 
   final DateTime start;
   final DateTime end;
 
-  /// Periods that only touch do not overlap. [gap] is the extra time that must stay free between them.
   bool overlaps(ServicePeriod other, {Duration gap = Duration.zero}) =>
       start.isBefore(other.end.add(gap)) && other.start.isBefore(end.add(gap));
 
-  /// A period for [service] that starts at [start]. [nights] matters only for boarding.
   static Result<ServicePeriod> parse(
     DateTime start, {
     required ServiceType service,

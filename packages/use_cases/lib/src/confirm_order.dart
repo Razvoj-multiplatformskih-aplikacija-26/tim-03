@@ -11,8 +11,6 @@ final class ConfirmOrder {
   final BoardRepository boards;
   final Clock clock;
 
-  /// Lets the domain decide over every order of the center (roles, R5, then R7 or R8) and saves the confirmed order
-  /// with the kennel or the member of staff it got. From KT2 the server makes the final decision.
   Future<Result<ServiceOrder>> call({required OrderId id, required User by}) async {
     final board = await boards.board();
     final order = board.orderById(id);

@@ -10,7 +10,6 @@ final class Kennel {
   final KennelId id;
   final String label;
 
-  /// The largest pet the kennel can hold. One kennel holds one pet at a time.
   final PetSize size;
 
   bool fits(PetSize petSize) => petSize.index <= size.index;

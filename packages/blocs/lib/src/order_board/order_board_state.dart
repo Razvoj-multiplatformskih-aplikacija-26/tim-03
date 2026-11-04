@@ -16,7 +16,6 @@ final class OrderBoardLoading extends OrderBoardState {
   const OrderBoardLoading();
 }
 
-/// The orders could not be loaded; the screen offers "Pokušaj ponovo".
 final class OrderBoardFailure extends OrderBoardState {
   const OrderBoardFailure(this.cause);
 
@@ -34,16 +33,12 @@ final class OrderBoardLoaded extends OrderBoardState {
 
   final CenterBoard board;
 
-  /// What the domain lets the signed-in member of staff do with each order.
   final Map<OrderId, Set<StaffAction>> actions;
 
-  /// The order in the side panel. It lives here, not in a widget, so a narrower window keeps it.
   final OrderId? selectedId;
 
-  /// The order whose action is in flight.
   final OrderId? inFlightId;
 
-  /// Something the screen shows once, then acknowledges.
   final OrderBoardNotice? notice;
 
   @override
@@ -58,7 +53,6 @@ final class OrderBoardLoaded extends OrderBoardState {
     ')',
   ].join();
 
-  /// Every order of the center, earliest start first: the rows of the table and the steps of the arrow keys.
   List<ServiceOrder> get rows => [...board.orders]..sort((a, b) => a.period.start.compareTo(b.period.start));
 
   ServiceOrder? get selected => switch (selectedId) {
@@ -72,7 +66,6 @@ final class OrderBoardLoaded extends OrderBoardState {
 
   Set<StaffAction> actionsFor(ServiceOrder order) => actions[order.id] ?? const {};
 
-  /// Every copy keeps the action in flight, so moving the selection meanwhile does not unlock another action.
   OrderBoardLoaded copyWith({
     OrderId? selectedId,
     bool clearSelection = false,
@@ -105,7 +98,6 @@ final class StaffActionSucceeded extends OrderBoardNotice {
   List<Object?> get props => [order];
 }
 
-/// The domain said no, for example because no kennel is free (R7).
 final class StaffActionRejected extends OrderBoardNotice {
   const StaffActionRejected(this.error);
 
@@ -115,7 +107,6 @@ final class StaffActionRejected extends OrderBoardNotice {
   List<Object?> get props => [error];
 }
 
-/// The repository could not be reached.
 final class StaffActionFailed extends OrderBoardNotice {
   const StaffActionFailed(this.cause);
 

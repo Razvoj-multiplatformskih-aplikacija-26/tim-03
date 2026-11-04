@@ -10,8 +10,6 @@ import 'package:use_cases/use_cases.dart';
 import '../data/seed.dart';
 import '../dependencies.dart';
 
-/// Every check in this form is a call into the domain: R1 note, R2 nights, R3 period while typing. The order is sent
-/// through [OrderFormBloc], and the repository decides R6 over every order.
 class OrderFormScreen extends StatefulWidget {
   const OrderFormScreen({super.key, this.initialPetId});
 
@@ -41,7 +39,6 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     super.dispose();
   }
 
-  /// How long the center needs the pet at the start: the whole visit, or one handover step for boarding.
   Duration get _startLength => _service.visitLength ?? ServicePeriod.step;
 
   List<DateTime> _startsOn(DateTime day) =>
@@ -125,7 +122,6 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     );
   }
 
-  /// What came back from sending: the screen shows it, the bloc has decided nothing on its own.
   void _onSent(BuildContext context, OrderFormState state) {
     switch (state) {
       case OrderFormSucceeded():
@@ -142,7 +138,6 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
     }
   }
 
-  /// What the chosen start means: when the visit ends, or when the pet goes home.
   String? _periodHint() {
     final period = _period(_start)?.valueOrNull;
     if (period == null) return null;
@@ -215,7 +210,6 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<DateTime>(
-                      // A new day or service brings a new list of starts, so the field starts over.
                       key: ValueKey((_day, _service)),
                       initialValue: _start,
                       items: [
@@ -236,7 +230,6 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         decoration: const InputDecoration(labelText: 'Broj noći'),
                         validator: _validateNights,
-                        // The pick-up time depends on the nights, so the start is checked again.
                         onChanged: (_) => setState(() {}),
                       ),
                     ],

@@ -6,11 +6,8 @@ import 'package:use_cases/use_cases.dart';
 import 'focus_frame.dart';
 import 'order_labels.dart';
 
-/// How wide each column is, in the order of the header.
 const _columnFlex = [3, 2, 3, 3, 3, 3];
 
-/// Every order of the center, one per row. A click or an arrow key selects an order; the selected row stands out and
-/// stays in view. A frame around the table shows when it has the keyboard focus.
 class OrdersTable extends StatefulWidget {
   const OrdersTable({
     super.key,
@@ -34,7 +31,6 @@ class OrdersTable extends StatefulWidget {
 class _OrdersTableState extends State<OrdersTable> {
   final _selectedRow = GlobalKey();
 
-  /// A wider window builds the table anew; it opens on the order that was selected in the list.
   @override
   void initState() {
     super.initState();
@@ -47,7 +43,6 @@ class _OrdersTableState extends State<OrdersTable> {
     if (oldWidget.selectedId != widget.selectedId) WidgetsBinding.instance.addPostFrameCallback((_) => _reveal());
   }
 
-  /// Scrolls only as far as needed to show the whole selected row, above or below.
   void _reveal() {
     final row = _selectedRow.currentContext;
     if (row == null || !row.mounted) return;
@@ -141,7 +136,6 @@ class _OrderRow extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  /// The kennel for boarding, the member of staff for everything else, once the order is confirmed.
   String _assignment() {
     if (board.kennelOf(order) case final kennel?) return 'Boks ${kennel.label}';
     if (board.assigneeOf(order) case final person?) return person.name;

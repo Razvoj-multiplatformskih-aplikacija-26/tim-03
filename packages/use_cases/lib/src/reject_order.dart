@@ -9,7 +9,6 @@ final class RejectOrder {
   final OrderRepository orders;
   final Clock clock;
 
-  /// Finds the order, lets the domain decide (roles, R5), and saves the rejected order with the reason.
   Future<Result<ServiceOrder>> call({required OrderId id, required User by, String reason = ''}) async {
     final order = await orders.find(id);
     if (order == null) return const Failure(NotFound());

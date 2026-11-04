@@ -16,6 +16,5 @@ abstract final class AccessPolicy {
 
   static bool canReject(User user) => user.role == Role.manager;
 
-  /// Receiving a pet, handing it back and closing the order.
   static bool canHandlePet(User user) => user.role.isStaff;
 }

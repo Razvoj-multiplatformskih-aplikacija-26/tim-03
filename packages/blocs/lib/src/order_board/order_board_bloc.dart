@@ -7,8 +7,6 @@ import 'package:use_cases/use_cases.dart';
 part 'order_board_event.dart';
 part 'order_board_state.dart';
 
-/// The staff's main flow: load every order of the center, pick one, confirm or reject it. The rules stay in the
-/// domain; the bloc keeps the selection and says what the screen should draw.
 final class OrderBoardBloc extends Bloc<OrderBoardEvent, OrderBoardState> {
   OrderBoardBloc({
     required this.getCenterBoard,
@@ -41,7 +39,6 @@ final class OrderBoardBloc extends Bloc<OrderBoardEvent, OrderBoardState> {
   final RejectOrder rejectOrder;
   final Clock clock;
 
-  /// The one signed-in member of staff; signing in arrives with the server in KT2.
   final User staff;
 
   void _onSelectionMoved(OrderBoardSelectionMoved event, Emitter<OrderBoardState> emit) {
@@ -73,13 +70,11 @@ final class OrderBoardBloc extends Bloc<OrderBoardEvent, OrderBoardState> {
     }
   }
 
-  /// The selection as it is now; staff may have moved it while the action was on its way.
   OrderId? get _selectedId => switch (state) {
     OrderBoardLoaded(:final selectedId) => selectedId,
     OrderBoardLoading() || OrderBoardFailure() => null,
   };
 
-  /// Ends the action in flight on the latest state, so a selection made meanwhile stays.
   void _finish(Emitter<OrderBoardState> emit, OrderBoardNotice notice) {
     final latest = state;
     if (latest is OrderBoardLoaded) emit(latest.copyWith(clearInFlight: true, notice: notice));
@@ -96,7 +91,6 @@ final class OrderBoardBloc extends Bloc<OrderBoardEvent, OrderBoardState> {
     emit(OrderBoardLoaded(board: board, actions: _actionsFor(board), selectedId: selectedId, notice: notice));
   }
 
-  /// The domain's own actions answer, without saving anything, which buttons and shortcuts may work.
   Map<OrderId, Set<StaffAction>> _actionsFor(CenterBoard board) {
     final now = clock.now();
     return {
@@ -108,8 +102,7 @@ final class OrderBoardBloc extends Bloc<OrderBoardEvent, OrderBoardState> {
     };
   }
 
-  /// A confirmation the domain refuses only for lack of room or people (R7, R8) stays on offer, so pressing it shows
-  /// why.
+
   bool _mayConfirm(ServiceOrder order, CenterBoard board, DateTime now) {
     final pet = board.petOf(order);
     if (pet == null) return false;

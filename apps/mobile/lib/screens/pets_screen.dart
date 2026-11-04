@@ -38,7 +38,6 @@ class PetsScreen extends StatelessWidget {
   }
 }
 
-/// Null while the orders are not loaded, so the card does not claim a number it does not know.
 int? _activeOrders(MyOrdersState state, Pet pet) => switch (state) {
   MyOrdersLoaded(:final orders) => orders.where((order) => order.petId == pet.id && order.isActive).length,
   MyOrdersEmpty() => 0,

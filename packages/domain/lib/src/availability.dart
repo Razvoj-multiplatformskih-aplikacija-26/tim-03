@@ -8,7 +8,7 @@ import 'pet/pet.dart';
 import 'result.dart';
 import 'user.dart';
 
-/// A walker needs this much time to get from one owner's address to the next.
+
 const walkTravelTime = Duration(minutes: 30);
 
 bool petIsFree({required PetId petId, required List<ServiceOrder> orders, required ServicePeriod period}) =>
@@ -27,7 +27,6 @@ List<Kennel> freeKennelsFor({
   ];
 }
 
-/// The smallest free kennel that fits, so larger kennels stay free for larger pets.
 Result<Kennel> assignKennel({
   required List<Kennel> kennels,
   required List<ServiceOrder> orders,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Nothing to show yet, with a word on what to do about it.
 class EmptyView extends StatelessWidget {
   const EmptyView({super.key, required this.title, this.message, this.icon = Icons.pets});
 
@@ -13,7 +12,6 @@ class EmptyView extends StatelessWidget {
       _StateLayout(icon: icon, iconColor: Theme.of(context).colorScheme.primary, title: title, message: message);
 }
 
-/// The data could not be loaded; the button asks for it again.
 class FailureView extends StatelessWidget {
   const FailureView({
     super.key,

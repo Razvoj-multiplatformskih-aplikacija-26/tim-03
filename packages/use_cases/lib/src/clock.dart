@@ -1,4 +1,4 @@
-/// The current time comes in through this port, so rules that depend on time are tested without waiting.
+
 abstract interface class Clock {
   DateTime now();
 }

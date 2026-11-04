@@ -7,8 +7,6 @@ import 'package:use_cases/use_cases.dart';
 part 'my_orders_event.dart';
 part 'my_orders_state.dart';
 
-/// The owner's main flow: load the orders, filter them by pet, cancel one. The rules stay in the domain; the bloc
-/// only puts the steps in order and says what the screen should draw.
 final class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
   MyOrdersBloc({required this.getMyOrders, required this.cancelOrder, required this.clock, required this.owner})
     : super(const MyOrdersLoading()) {

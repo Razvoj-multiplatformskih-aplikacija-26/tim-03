@@ -5,7 +5,6 @@ import '../identifiers.dart';
 sealed class OrderStatus {
   const OrderStatus();
 
-  /// An active order still holds its pet, kennel and member of staff for its period.
   bool get isActive => switch (this) {
     Pending() || Confirmed() || InProgress() || ReadyForPickup() => true,
     Completed() || Rejected() || Cancelled() => false,
@@ -36,7 +35,6 @@ final class Confirmed extends OrderStatus {
   String toString() => 'Confirmed(by $confirmedBy at $at)';
 }
 
-/// The pet is in the center, or with the walker.
 @immutable
 final class InProgress extends OrderStatus {
   const InProgress({required this.receivedBy, required this.at});
@@ -54,7 +52,6 @@ final class InProgress extends OrderStatus {
   String toString() => 'InProgress(by $receivedBy at $at)';
 }
 
-/// The pet waits for its owner in the center, or the walker has brought it back home.
 @immutable
 final class ReadyForPickup extends OrderStatus {
   const ReadyForPickup({required this.at});
@@ -125,7 +122,6 @@ final class Cancelled extends OrderStatus {
   String toString() => 'Cancelled("$reason" by $cancelledBy at $at)';
 }
 
-/// The only place that says which status changes are allowed. Everything not listed is forbidden.
 bool canTransition(OrderStatus from, OrderStatus to) => switch ((from, to)) {
   (Pending(), Confirmed()) => true,
   (Pending(), Rejected()) => true,

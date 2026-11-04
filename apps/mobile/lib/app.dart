@@ -17,7 +17,6 @@ class SapaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Above the router, so every screen and dialog of the orders sees the same bloc.
     return RepositoryProvider.value(
       value: dependencies,
       child: BlocProvider(

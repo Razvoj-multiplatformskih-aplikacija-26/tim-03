@@ -10,7 +10,6 @@ sealed class OrderFormState extends Equatable {
   String toString() => '$runtimeType';
 }
 
-/// The owner is filling in the form; it is also where the form returns after a refusal.
 final class OrderFormEditing extends OrderFormState {
   const OrderFormEditing();
 }
@@ -28,7 +27,6 @@ final class OrderFormSucceeded extends OrderFormState {
   List<Object?> get props => [order];
 }
 
-/// The rules said no, for example the pet already has an order then (R6).
 final class OrderFormRejected extends OrderFormState {
   const OrderFormRejected(this.error);
 
@@ -38,7 +36,6 @@ final class OrderFormRejected extends OrderFormState {
   List<Object?> get props => [error];
 }
 
-/// The order did not reach the repository; the owner can send it again.
 final class OrderFormFailed extends OrderFormState {
   const OrderFormFailed(this.cause);
 

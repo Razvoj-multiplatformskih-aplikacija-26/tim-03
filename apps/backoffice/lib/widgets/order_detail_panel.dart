@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:ui/ui.dart';
 import 'package:use_cases/use_cases.dart';
 
-/// The selected order in detail, next to the table, with the actions the domain allows.
 class OrderDetailPanel extends StatelessWidget {
   const OrderDetailPanel({
     super.key,
@@ -19,11 +18,9 @@ class OrderDetailPanel extends StatelessWidget {
   final CenterBoard board;
   final VoidCallback onClose;
 
-  /// Null when the domain does not offer the action for this order.
   final VoidCallback? onConfirm;
   final VoidCallback? onReject;
 
-  /// An action is on its way; the buttons wait for the answer.
   final bool busy;
 
   String _statusDetail() {

@@ -1,19 +1,16 @@
 import 'package:collection/collection.dart' show ListEquality, MapEquality;
 import 'package:domain/domain.dart';
 
-/// Everything staff see at once: every order of the center, and the pets, people and kennels the orders name.
 final class CenterBoard {
   const CenterBoard({required this.orders, required this.pets, required this.people, required this.kennels});
 
   final List<ServiceOrder> orders;
   final Map<PetId, Pet> pets;
 
-  /// Owners and staff by id, so the screens show names instead of ids.
   final Map<UserId, User> people;
 
   final List<Kennel> kennels;
 
-  /// The members of staff the domain may assign to an order (R8).
   List<User> get staff => [
     for (final person in people.values)
       if (person.role.isStaff) person,

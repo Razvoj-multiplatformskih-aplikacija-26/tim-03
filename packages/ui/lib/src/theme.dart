@@ -107,7 +107,6 @@ abstract final class SapaTheme {
 abstract final class SapaColorSchemes {
   static const seed = Color(0xFF2A7F74);
 
-  // Teal from the seed, with a warm orange accent for the main action and the pets.
   static final light = ColorScheme.fromSeed(
     seedColor: seed,
     tertiary: const Color(0xFFB8621B),
@@ -127,7 +126,6 @@ abstract final class SapaColorSchemes {
 abstract final class SapaTypography {
   static const family = 'Rubik';
 
-  /// The font ships with this package, so every app that uses the theme gets it without declaring it again.
   static const package = 'ui';
 
   static TextTheme textTheme(ColorScheme scheme) {

@@ -6,6 +6,5 @@ import 'dependencies.dart';
 
 void main() {
   initializeDomainTimeZones();
-  // The only line that picks the implementation of the port.
   runApp(SapaApp(dependencies: AppDependencies.fake()));
 }

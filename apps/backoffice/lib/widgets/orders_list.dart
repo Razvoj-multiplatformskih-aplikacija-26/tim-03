@@ -6,8 +6,6 @@ import 'package:use_cases/use_cases.dart';
 import 'focus_frame.dart';
 import 'order_labels.dart';
 
-/// The same orders as the table, one card per order, for a narrow window. The selection comes from the bloc, so the
-/// order selected in the table is selected here too and in view.
 class OrdersList extends StatefulWidget {
   const OrdersList({
     super.key,
@@ -31,7 +29,6 @@ class OrdersList extends StatefulWidget {
 class _OrdersListState extends State<OrdersList> {
   final _selectedItem = GlobalKey();
 
-  /// A narrower window builds the list anew; it opens on the order that was selected in the table.
   @override
   void initState() {
     super.initState();
@@ -44,7 +41,6 @@ class _OrdersListState extends State<OrdersList> {
     if (oldWidget.selectedId != widget.selectedId) WidgetsBinding.instance.addPostFrameCallback((_) => _reveal());
   }
 
-  /// Scrolls only as far as needed to show the whole selected card, above or below.
   void _reveal() {
     final item = _selectedItem.currentContext;
     if (item == null || !item.mounted) return;

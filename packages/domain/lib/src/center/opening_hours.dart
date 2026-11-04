@@ -42,14 +42,11 @@ final class OpeningHours {
   DateTime localToUtc(int year, int month, int day, LocalTime time) =>
       tz.TZDateTime(location, year, month, day, time.hour, time.minute).toUtc();
 
-  /// The same local time [days] days later. Unlike adding 24-hour days, it stays correct across a daylight saving
-  /// time change.
   DateTime addLocalDays(DateTime instant, int days) {
     final local = toLocal(instant);
     return tz.TZDateTime(location, local.year, local.month, local.day + days, local.hour, local.minute).toUtc();
   }
 
-  /// Whether the center is open for the whole interval that starts at [start] and lasts [duration], on one day.
   bool covers(DateTime start, Duration duration) {
     final local = toLocal(start);
     final hours = forWeekday(local.weekday);

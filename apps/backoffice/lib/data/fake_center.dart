@@ -3,9 +3,6 @@ import 'package:use_cases/use_cases.dart';
 
 import 'seed.dart';
 
-/// The backoffice's fake implementation of the ports: every order of the center in memory, with a delay like a real
-/// network. It has its own data, not shared with the mobile app. From KT2 an HTTP adapter takes its place in one spot,
-/// and the screens do not change.
 final class FakeCenter implements OrderRepository, BoardRepository {
   FakeCenter({required this.clock, this.latency = const Duration(milliseconds: 400)})
     : _orders = seedOrders(clock.now());
@@ -44,7 +41,6 @@ final class FakeCenter implements OrderRepository, BoardRepository {
     return _orders.where((order) => order.id == id).firstOrNull;
   }
 
-  /// Decides like the server will: the domain's placeOrder over every order in the center (R6).
   @override
   Future<Result<ServiceOrder>> create(OrderRequest request) async {
     await _roundTrip();

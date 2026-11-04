@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Takes the keyboard focus when it appears and draws a frame in the theme's color around [child] while it has it,
-/// so staff can see where the keys go.
 class FocusFrame extends StatelessWidget {
   const FocusFrame({super.key, required this.focusNode, required this.child});
 

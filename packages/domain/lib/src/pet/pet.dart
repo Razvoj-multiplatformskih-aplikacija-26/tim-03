@@ -4,7 +4,6 @@ import '../identifiers.dart';
 
 enum Species { dog, cat }
 
-/// Ordered from the smallest to the largest, so a kennel fits every size up to its own.
 enum PetSize { small, medium, large }
 
 @immutable

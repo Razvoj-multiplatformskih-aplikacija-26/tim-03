@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Background and text color of one status badge.
 @immutable
 class StatusTone {
   const StatusTone(this.background, this.foreground);

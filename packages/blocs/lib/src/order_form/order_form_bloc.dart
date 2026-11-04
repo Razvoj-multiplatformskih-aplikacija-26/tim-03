@@ -6,8 +6,6 @@ import 'package:use_cases/use_cases.dart';
 part 'order_form_event.dart';
 part 'order_form_state.dart';
 
-/// Sends a new order. The form checks every field with the domain while the owner types; this bloc only sends what
-/// passed and says how it went.
 final class OrderFormBloc extends Bloc<OrderFormEvent, OrderFormState> {
   OrderFormBloc({required this.placeOrder, required this.owner}) : super(const OrderFormEditing()) {
     on<OrderFormSubmitted>(_onSubmitted);

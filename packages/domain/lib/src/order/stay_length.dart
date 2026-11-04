@@ -3,7 +3,6 @@ import 'package:meta/meta.dart';
 import '../errors.dart';
 import '../result.dart';
 
-/// Number of nights a pet stays in boarding.
 @immutable
 final class StayLength {
   const StayLength._(this.value);

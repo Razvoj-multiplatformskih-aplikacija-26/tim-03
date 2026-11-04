@@ -5,7 +5,6 @@ const _caretaker2 = User(id: UserId('u-caretaker-2'), name: 'Jovana Lukić', rol
 const _vet = User(id: UserId('u-vet'), name: 'dr Stefan Kovač', role: Role.veterinarian);
 const _walker = User(id: UserId('u-walker'), name: 'Nikola Jović', role: Role.walker);
 
-/// The one signed-in member of staff. Only a manager may both confirm and reject, so every action can be shown.
 const currentStaff = User(id: UserId('u-manager'), name: 'Ivana Simić', role: Role.manager);
 
 const fakeStaff = [_caretaker, _caretaker2, _vet, _walker, currentStaff];
@@ -19,7 +18,6 @@ const _ivan = User(id: UserId('u-ivan'), name: 'Ivan Pavlović', role: Role.owne
 
 const fakeOwners = [_jelena, _petar, _ana, _milos, _sara, _ivan];
 
-/// Two kennels of each size, so the large ones can run out (R7).
 const fakeKennels = [
   Kennel(id: KennelId('k-a1'), label: 'A1', size: PetSize.small),
   Kennel(id: KennelId('k-a2'), label: 'A2', size: PetSize.small),
@@ -90,7 +88,6 @@ const _max = Pet(id: PetId('p-max'), ownerId: UserId('u-ivan'), name: 'Max', spe
 
 const fakePets = [_reks, _mica, _bobi, _luna, _maza, _tom, _dzeki, _kiki, _floki, _max];
 
-/// Monday to Friday 8–20, Saturday 9–15, closed on Sunday.
 final centerOpeningHours = OpeningHours({
   DateTime.monday: const DayHours(open: LocalTime(8, 0), close: LocalTime(20, 0)),
   DateTime.tuesday: const DayHours(open: LocalTime(8, 0), close: LocalTime(20, 0)),
@@ -100,8 +97,6 @@ final centerOpeningHours = OpeningHours({
   DateTime.saturday: const DayHours(open: LocalTime(9, 0), close: LocalTime(15, 0)),
 });
 
-/// Every order of the center around [now], in all seven states. Two of the pending ones cannot be confirmed: no large
-/// kennel is free for Reks (R7), and the only walker is out with Max when Džeki's walk would start (R8).
 List<ServiceOrder> seedOrders(DateTime now) {
   final hours = centerOpeningHours;
   final today = centerDay(now);
@@ -173,7 +168,6 @@ List<ServiceOrder> seedOrders(DateTime now) {
   DateTime readyAt(ServicePeriod period) => period.end.isBefore(now) ? period.end : ago(Duration.zero);
 
   return [
-    // Waiting for staff.
     order(
       'o-101',
       _reks,
@@ -194,7 +188,6 @@ List<ServiceOrder> seedOrders(DateTime now) {
       note: 'Godišnja vakcinacija.',
     ),
     order('o-108', _bobi, ServiceType.walk, visit(ServiceType.walk, at(8, 9))),
-    // Confirmed, with the walker, the large kennels and the vet already taken.
     order(
       'o-109',
       _max,
@@ -235,7 +228,6 @@ List<ServiceOrder> seedOrders(DateTime now) {
       assigneeId: _caretaker2.id,
       status: confirmed(),
     ),
-    // In the center right now.
     order(
       'o-114',
       _bobi,
@@ -268,7 +260,6 @@ List<ServiceOrder> seedOrders(DateTime now) {
       assigneeId: _caretaker2.id,
       status: ReadyForPickup(at: readyAt(dzekiGrooming)),
     ),
-    // Over.
     order(
       'o-118',
       _bobi,

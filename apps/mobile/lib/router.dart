@@ -28,14 +28,12 @@ final router = GoRouter(
               path: '/orders',
               builder: (context, state) => const MyOrdersScreen(),
               routes: [
-                // Listed before ':id', otherwise 'new' would be read as an order id.
                 GoRoute(
                   path: 'new',
                   parentNavigatorKey: _rootNavigatorKey,
                   builder: (context, state) {
                     final petId = state.uri.queryParameters['pet'];
                     final dependencies = context.read<AppDependencies>();
-                    // A local bloc: it lives as long as the form is open.
                     return BlocProvider(
                       create: (_) => OrderFormBloc(
                         placeOrder: PlaceOrder(orders: dependencies.orders),

@@ -9,14 +9,11 @@ import '../data/fake_center.dart';
 import '../data/seed.dart';
 import '../dependencies.dart';
 
-/// A titled part of one tab, such as the orders that are happening right now.
 typedef _Group = (String title, List<ServiceOrder> orders);
 
-/// The owner's main flow. The screen only draws the state of [MyOrdersBloc] and sends it events.
 class MyOrdersScreen extends StatelessWidget {
   const MyOrdersScreen({super.key});
 
-  /// Shown once, wherever the owner cancelled from, and then acknowledged so it is not shown again.
   void _showNotice(BuildContext context, MyOrdersNotice notice) {
     final message = switch (notice) {
       OrderCancelled() => 'Nalog je otkazan.',
@@ -130,7 +127,6 @@ class _LoadedBody extends StatelessWidget {
   }
 }
 
-/// What is happening now first, then what comes this week, then the rest.
 List<_Group> _currentGroups(List<ServiceOrder> orders, {required DateTime now}) {
   final weekAhead = now.add(const Duration(days: 7));
   bool isHappening(ServiceOrder order) => order.status is InProgress || order.status is ReadyForPickup;
@@ -330,16 +326,13 @@ class _OrderCard extends StatelessWidget {
   }
 }
 
-/// A small calendar page with the weekday, day and month of [instant] in the center's time zone.
 class _DateTile extends StatelessWidget {
   const _DateTile({required this.instant, this.today = false, this.muted = false});
 
   final DateTime instant;
 
-  /// Drawn in the primary color, so today's orders stand out.
   final bool today;
 
-  /// Drawn in grey, for orders that are over.
   final bool muted;
 
   @override
@@ -425,7 +418,6 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-/// Switches of the fake repository, so every state of the screen can be shown. With a real adapter it disappears.
 class _FakeDataMenu extends StatelessWidget {
   const _FakeDataMenu();
 
