@@ -3,7 +3,7 @@ import 'package:use_cases/use_cases.dart';
 
 import 'seed.dart';
 
-final class FakeCenter implements OrderRepository {
+final class FakeCenter implements OrderRepository, PetRepository, CenterRepository {
   FakeCenter({required this.clock, this.latency = const Duration(milliseconds: 700)})
     : _orders = seedOrders(clock.now());
 
@@ -29,6 +29,15 @@ final class FakeCenter implements OrderRepository {
     if (emptyResponses == 0) return false;
     emptyResponses--;
     return true;
+  }
+
+  @override
+  Future<OpeningHours> openingHours() async => centerOpeningHours;
+
+  @override
+  Future<List<Pet>> petsOf(UserId ownerId) async {
+    await _roundTrip();
+    return fakePets.where((pet) => pet.ownerId == ownerId).toList();
   }
 
   @override
