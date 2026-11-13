@@ -22,6 +22,7 @@ void main() {
 
   MyOrdersBloc build() => MyOrdersBloc(
     getMyOrders: GetMyOrders(orders: repository),
+    getMyPets: GetMyPets(pets: InMemoryCenter()),
     cancelOrder: CancelOrder(orders: repository, clock: clock),
     clock: clock,
     owner: owner,
@@ -55,7 +56,7 @@ void main() {
         return build();
       },
       act: (bloc) => bloc.add(const MyOrdersRequested()),
-      expect: () => [const MyOrdersLoading(), const MyOrdersEmpty()],
+      expect: () => [const MyOrdersLoading(), const MyOrdersEmpty(ownerPets)],
     );
 
     blocTest<MyOrdersBloc, MyOrdersState>(

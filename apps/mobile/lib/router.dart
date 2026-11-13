@@ -37,8 +37,10 @@ final router = GoRouter(
                     return BlocProvider(
                       create: (_) => OrderFormBloc(
                         placeOrder: PlaceOrder(orders: dependencies.orders),
+                        getMyPets: GetMyPets(pets: dependencies.pets),
+                        getOpeningHours: GetOpeningHours(center: dependencies.center),
                         owner: dependencies.owner,
-                      ),
+                      )..add(const OrderFormStarted()),
                       child: OrderFormScreen(initialPetId: petId == null ? null : PetId(petId)),
                     );
                   },

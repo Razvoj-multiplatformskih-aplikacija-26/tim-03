@@ -4,6 +4,10 @@ sealed class OrderFormEvent {
   const OrderFormEvent();
 }
 
+final class OrderFormStarted extends OrderFormEvent {
+  const OrderFormStarted();
+}
+
 final class OrderFormSubmitted extends OrderFormEvent {
   const OrderFormSubmitted({required this.pet, required this.service, required this.period, this.note});
 

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ui/ui.dart';
 
-import '../data/seed.dart';
 import '../dependencies.dart';
 
 class OrderDetailScreen extends StatelessWidget {
@@ -28,9 +27,8 @@ class OrderDetailScreen extends StatelessWidget {
   }
 }
 
-Future<void> confirmAndCancel(BuildContext context, ServiceOrder order) async {
+Future<void> confirmAndCancel(BuildContext context, ServiceOrder order, {required Pet? pet}) async {
   final bloc = context.read<MyOrdersBloc>();
-  final pet = petById(order.petId);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
@@ -58,15 +56,15 @@ class _DetailBody extends StatelessWidget {
   Widget? _cancelBar(BuildContext context) {
     if (state.isCancelling(order)) return const _CancelBar(onCancel: null, busy: true);
     if (state.canCancel(order)) {
-      return _CancelBar(onCancel: state.isBusy ? null : () => confirmAndCancel(context, order));
+      return _CancelBar(
+        onCancel: state.isBusy ? null : () => confirmAndCancel(context, order, pet: state.petOf(order)),
+      );
     }
     if (state.isTooLateToCancel(order)) {
       return _CancelBar(onCancel: null, hint: const CancellationTooLate(notice: cancellationNotice).message);
     }
     return null;
   }
-
-  String _staffName(UserId id) => staffById(id)?.name ?? id.value;
 
   List<_DetailRow> _periodRows() {
     final period = order.period;
@@ -87,41 +85,24 @@ class _DetailBody extends StatelessWidget {
     };
   }
 
-  List<_DetailRow> _assignmentRows() {
-    final kennelId = order.kennelId;
-    final assigneeId = order.assigneeId;
-    return [
-      if (kennelId != null)
-        _DetailRow(
-          icon: Icons.night_shelter_outlined,
-          label: 'Boks',
-          value: kennelById(kennelId)?.label ?? kennelId.value,
-        ),
-      if (assigneeId != null)
-        _DetailRow(
-          icon: Icons.badge_outlined,
-          label: order.service.performer?.label ?? 'Izvršilac',
-          value: _staffName(assigneeId),
-        ),
-    ];
-  }
+  // The owner does not see who on the staff is assigned, only that someone is.
+  List<_DetailRow> _assignmentRows() => [
+    if (order.assigneeId != null)
+      _DetailRow(icon: Icons.badge_outlined, label: order.service.performer?.label ?? 'Izvršilac', value: 'Dodeljen'),
+  ];
 
   List<_DetailRow> _statusRows() {
     final isWalk = order.service == ServiceType.walk;
     return switch (order.status) {
       Pending() => const [],
-      Confirmed(:final confirmedBy, :final at) => [
-        _DetailRow(
-          icon: Icons.check_circle_outline,
-          label: 'Potvrđen',
-          value: '${capitalize(formatDateAndTime(at))} · ${_staffName(confirmedBy)}',
-        ),
+      Confirmed(:final at) => [
+        _DetailRow(icon: Icons.check_circle_outline, label: 'Potvrđen', value: capitalize(formatDateAndTime(at))),
       ],
-      InProgress(:final receivedBy, :final at) => [
+      InProgress(:final at) => [
         _DetailRow(
           icon: Icons.pets,
           label: isWalk ? 'Šetač preuzeo ljubimca' : 'Ljubimac primljen',
-          value: '${capitalize(formatDateAndTime(at))} · ${_staffName(receivedBy)}',
+          value: capitalize(formatDateAndTime(at)),
         ),
       ],
       ReadyForPickup(:final at) => [
@@ -155,7 +136,7 @@ class _DetailBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final pet = petById(order.petId);
+    final pet = state.petOf(order);
     final note = order.note;
     final rows = [
       if (pet != null)

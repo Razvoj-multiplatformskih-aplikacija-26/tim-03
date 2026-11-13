@@ -8,14 +8,6 @@ const _vet = User(id: UserId('u-vet'), name: 'dr Stefan Kovač', role: Role.vete
 const _walker = User(id: UserId('u-walker'), name: 'Nikola Jović', role: Role.walker);
 const _manager = User(id: UserId('u-manager'), name: 'Ivana Simić', role: Role.manager);
 
-const fakeStaff = [_caretaker, _vet, _walker, _manager];
-
-const fakeKennels = [
-  Kennel(id: KennelId('k-a1'), label: 'A1', size: PetSize.small),
-  Kennel(id: KennelId('k-b1'), label: 'B1', size: PetSize.medium),
-  Kennel(id: KennelId('k-c1'), label: 'C1', size: PetSize.large),
-];
-
 const fakePets = [
   Pet(id: PetId('p-rex'), ownerId: UserId('u-owner'), name: 'Reks', species: Species.dog, size: PetSize.large),
   Pet(id: PetId('p-mica'), ownerId: UserId('u-owner'), name: 'Mica', species: Species.cat, size: PetSize.small),
@@ -30,12 +22,6 @@ final centerOpeningHours = OpeningHours({
   DateTime.friday: const DayHours(open: LocalTime(8, 0), close: LocalTime(20, 0)),
   DateTime.saturday: const DayHours(open: LocalTime(9, 0), close: LocalTime(15, 0)),
 });
-
-Pet? petById(PetId id) => fakePets.where((pet) => pet.id == id).firstOrNull;
-
-User? staffById(UserId id) => fakeStaff.where((user) => user.id == id).firstOrNull;
-
-Kennel? kennelById(KennelId id) => fakeKennels.where((kennel) => kennel.id == id).firstOrNull;
 
 List<ServiceOrder> seedOrders(DateTime now) {
   final hours = centerOpeningHours;

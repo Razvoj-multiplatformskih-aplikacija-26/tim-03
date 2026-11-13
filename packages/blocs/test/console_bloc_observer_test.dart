@@ -15,6 +15,7 @@ void main() {
     final repository = InMemoryOrders();
     final bloc = MyOrdersBloc(
       getMyOrders: GetMyOrders(orders: repository),
+      getMyPets: GetMyPets(pets: InMemoryCenter()),
       cancelOrder: CancelOrder(orders: repository, clock: FixedClock(mondayNine)),
       clock: FixedClock(mondayNine),
       owner: owner,

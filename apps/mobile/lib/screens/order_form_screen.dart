@@ -7,27 +7,69 @@ import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
 import 'package:use_cases/use_cases.dart';
 
-import '../data/seed.dart';
 import '../dependencies.dart';
 
-class OrderFormScreen extends StatefulWidget {
+class OrderFormScreen extends StatelessWidget {
   const OrderFormScreen({super.key, this.initialPetId});
 
   final PetId? initialPetId;
 
   @override
-  State<OrderFormScreen> createState() => _OrderFormScreenState();
+  Widget build(BuildContext context) {
+    return BlocBuilder<OrderFormBloc, OrderFormState>(
+      builder: (context, state) => switch (state) {
+        OrderFormLoading() => _Frame(
+          child: Semantics(label: 'Učitavanje forme', child: const CircularProgressIndicator()),
+        ),
+        OrderFormUnavailable() => _Frame(
+          child: FailureView(
+            title: 'Forma nije učitana.',
+            onRetry: () => context.read<OrderFormBloc>().add(const OrderFormStarted()),
+          ),
+        ),
+        OrderFormReady(:final pets) when pets.isEmpty => const _Frame(child: EmptyView(title: 'Nemate ljubimaca.')),
+        OrderFormReady(:final pets, :final openingHours) => _OrderForm(
+          pets: pets,
+          openingHours: openingHours,
+          initialPetId: initialPetId,
+        ),
+      },
+    );
+  }
 }
 
-class _OrderFormScreenState extends State<OrderFormScreen> {
+class _Frame extends StatelessWidget {
+  const _Frame({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Zakaži uslugu')),
+      body: Center(child: child),
+    );
+  }
+}
+
+class _OrderForm extends StatefulWidget {
+  const _OrderForm({required this.pets, required this.openingHours, required this.initialPetId});
+
+  final List<Pet> pets;
+  final OpeningHours openingHours;
+  final PetId? initialPetId;
+
+  @override
+  State<_OrderForm> createState() => _OrderFormState();
+}
+
+class _OrderFormState extends State<_OrderForm> {
   final _formKey = GlobalKey<FormState>();
   final _nightsController = TextEditingController(text: '${StayLength.min}');
   final _noteController = TextEditingController();
 
   late final Clock _clock = context.read<AppDependencies>().clock;
-  late final User _owner = context.read<AppDependencies>().owner;
-  late final List<Pet> _pets = fakePets.where((pet) => pet.ownerId == _owner.id).toList();
-  late Pet _pet = _pets.firstWhere((pet) => pet.id == widget.initialPetId, orElse: () => _pets.first);
+  late Pet _pet = widget.pets.firstWhere((pet) => pet.id == widget.initialPetId, orElse: () => widget.pets.first);
   ServiceType _service = ServiceType.boarding;
   late DateTime _day = _firstDayWithFreeStart(_clock.now());
   DateTime? _start;
@@ -42,7 +84,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
   Duration get _startLength => _service.visitLength ?? ServicePeriod.step;
 
   List<DateTime> _startsOn(DateTime day) =>
-      centerOpeningHours.startsOn(day, length: _startLength, step: ServicePeriod.step);
+      widget.openingHours.startsOn(day, length: _startLength, step: ServicePeriod.step);
 
   DateTime _firstDayWithFreeStart(DateTime now) {
     final today = centerDay(now);
@@ -61,7 +103,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
       start,
       service: _service,
       now: _clock.now(),
-      openingHours: centerOpeningHours,
+      openingHours: widget.openingHours,
       nights: StayLength.parse(_nightsInput ?? StayLength.min).valueOrNull ?? StayLength.shortest,
     );
   }
@@ -93,7 +135,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
       initialDate: _day,
       firstDate: today,
       lastDate: DateTime(today.year, today.month, today.day + 90),
-      selectableDayPredicate: (day) => centerOpeningHours.isOpenOn(day.weekday),
+      selectableDayPredicate: (day) => widget.openingHours.isOpenOn(day.weekday),
       helpText: _service == ServiceType.boarding ? 'Datum predaje' : 'Datum',
     );
     if (picked == null) return;
@@ -133,7 +175,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
         _showMessage(error.message);
       case OrderFormFailed():
         _showMessage('Nalog nije poslat. Proverite vezu i pokušajte ponovo.');
-      case OrderFormEditing() || OrderFormSubmitting():
+      case OrderFormLoading() || OrderFormUnavailable() || OrderFormEditing() || OrderFormSubmitting():
         break;
     }
   }
@@ -172,7 +214,7 @@ class _OrderFormScreenState extends State<OrderFormScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        for (final pet in _pets)
+                        for (final pet in widget.pets)
                           ChoiceChip(
                             avatar: const Icon(Icons.pets, size: 18),
                             label: Text(pet.name),

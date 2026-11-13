@@ -8,8 +8,13 @@ part 'my_orders_event.dart';
 part 'my_orders_state.dart';
 
 final class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
-  MyOrdersBloc({required this.getMyOrders, required this.cancelOrder, required this.clock, required this.owner})
-    : super(const MyOrdersLoading()) {
+  MyOrdersBloc({
+    required this.getMyOrders,
+    required this.getMyPets,
+    required this.cancelOrder,
+    required this.clock,
+    required this.owner,
+  }) : super(const MyOrdersLoading()) {
     on<MyOrdersRequested>((event, emit) async {
       emit(const MyOrdersLoading());
       await _reload(emit);
@@ -27,6 +32,7 @@ final class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
   }
 
   final GetMyOrders getMyOrders;
+  final GetMyPets getMyPets;
   final CancelOrder cancelOrder;
   final Clock clock;
   final User owner;
@@ -57,14 +63,16 @@ final class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
 
   Future<void> _reload(Emitter<MyOrdersState> emit, {PetId? petFilter, MyOrdersNotice? notice}) async {
     final List<ServiceOrder> orders;
+    final List<Pet> pets;
     try {
       orders = await getMyOrders(owner);
+      pets = await getMyPets(owner);
     } on RepositoryException catch (cause) {
       emit(MyOrdersFailure(cause));
       return;
     }
     if (orders.isEmpty) {
-      emit(const MyOrdersEmpty());
+      emit(MyOrdersEmpty(pets));
       return;
     }
     final now = clock.now();
@@ -79,6 +87,7 @@ final class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
     emit(
       MyOrdersLoaded(
         orders: orders,
+        pets: pets,
         now: now,
         cancellable: cancellable,
         tooLateToCancel: tooLateToCancel,
