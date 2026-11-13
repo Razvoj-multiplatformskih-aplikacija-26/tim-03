@@ -114,7 +114,11 @@ void main() {
       skip: 3,
       expect: () => [
         isA<MyOrdersLoaded>()
-            .having((s) => s.notice, 'notice', const CancellationRejected(CancellationTooLate()))
+            .having(
+              (s) => s.notice,
+              'notice',
+              const CancellationRejected(CancellationTooLate(notice: cancellationNotice)),
+            )
             .having((s) => s.byId(inFiveHours.id)?.status, 'status', const Pending()),
       ],
     );

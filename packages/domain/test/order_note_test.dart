@@ -8,13 +8,13 @@ void main() {
     });
 
     test('rejects a note of 301 characters', () {
-      expect(OrderNote.parse('a' * 301), const Failure<OrderNote>(NoteTooLong(301)));
+      expect(OrderNote.parse('a' * 301), const Failure<OrderNote>(NoteTooLong(301, max: 300)));
     });
 
     test('counts an emoji family as one character', () {
       const family = '👨‍👩‍👧‍👦';
       expect(OrderNote.parse(family * 300).isSuccess, isTrue);
-      expect(OrderNote.parse(family * 301), const Failure<OrderNote>(NoteTooLong(301)));
+      expect(OrderNote.parse(family * 301), const Failure<OrderNote>(NoteTooLong(301, max: 300)));
     });
 
     test('trims surrounding whitespace before measuring', () {

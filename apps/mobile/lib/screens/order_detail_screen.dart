@@ -60,7 +60,9 @@ class _DetailBody extends StatelessWidget {
     if (state.canCancel(order)) {
       return _CancelBar(onCancel: state.isBusy ? null : () => confirmAndCancel(context, order));
     }
-    if (state.isTooLateToCancel(order)) return _CancelBar(onCancel: null, hint: const CancellationTooLate().message);
+    if (state.isTooLateToCancel(order)) {
+      return _CancelBar(onCancel: null, hint: const CancellationTooLate(notice: cancellationNotice).message);
+    }
     return null;
   }
 

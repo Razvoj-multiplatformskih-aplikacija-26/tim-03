@@ -8,34 +8,38 @@ sealed class DomainError {
 
 @immutable
 final class NoteTooLong extends DomainError {
-  const NoteTooLong(this.length);
+  const NoteTooLong(this.length, {required this.max});
 
   final int length;
+  final int max;
 
   @override
-  bool operator ==(Object other) => other is NoteTooLong && other.length == length;
+  bool operator ==(Object other) => other is NoteTooLong && other.length == length && other.max == max;
 
   @override
-  int get hashCode => Object.hash(NoteTooLong, length);
+  int get hashCode => Object.hash(NoteTooLong, length, max);
 
   @override
-  String toString() => 'NoteTooLong($length)';
+  String toString() => 'NoteTooLong($length, max: $max)';
 }
 
 @immutable
 final class InvalidStayLength extends DomainError {
-  const InvalidStayLength(this.nights);
+  const InvalidStayLength(this.nights, {required this.min, required this.max});
 
   final int nights;
+  final int min;
+  final int max;
 
   @override
-  bool operator ==(Object other) => other is InvalidStayLength && other.nights == nights;
+  bool operator ==(Object other) =>
+      other is InvalidStayLength && other.nights == nights && other.min == min && other.max == max;
 
   @override
-  int get hashCode => Object.hash(InvalidStayLength, nights);
+  int get hashCode => Object.hash(InvalidStayLength, nights, min, max);
 
   @override
-  String toString() => 'InvalidStayLength($nights)';
+  String toString() => 'InvalidStayLength($nights, min: $min, max: $max)';
 }
 
 final class PeriodInPast extends DomainError {
@@ -50,8 +54,20 @@ final class OutsideOpeningHours extends DomainError {
   const OutsideOpeningHours();
 }
 
+@immutable
 final class CancellationTooLate extends DomainError {
-  const CancellationTooLate();
+  const CancellationTooLate({required this.notice});
+
+  final Duration notice;
+
+  @override
+  bool operator ==(Object other) => other is CancellationTooLate && other.notice == notice;
+
+  @override
+  int get hashCode => Object.hash(CancellationTooLate, notice);
+
+  @override
+  String toString() => 'CancellationTooLate(notice: $notice)';
 }
 
 @immutable

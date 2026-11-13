@@ -35,7 +35,7 @@ void main() {
       final repository = InMemoryOrders(clock: threeDaysBefore, orders: [orderAt(tuesdayTen)]);
       final late = FixedClock(tuesdayTen.subtract(const Duration(hours: 23, minutes: 59)));
       final result = await CancelOrder(orders: repository, clock: late)(id: const OrderId('o-1'), by: owner);
-      expect(result, const Failure<ServiceOrder>(CancellationTooLate()));
+      expect(result, const Failure<ServiceOrder>(CancellationTooLate(notice: cancellationNotice)));
       expect(repository.orders.single.status, const Pending());
     });
 
