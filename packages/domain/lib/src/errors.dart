@@ -90,10 +90,6 @@ final class InvalidTransition extends DomainError {
   String toString() => 'InvalidTransition(${from.runtimeType} -> ${to.runtimeType})';
 }
 
-final class OrderChanged extends DomainError {
-  const OrderChanged();
-}
-
 final class PetAlreadyBooked extends DomainError {
   const PetAlreadyBooked();
 }

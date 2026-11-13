@@ -67,7 +67,8 @@ final class FakeCenter implements OrderRepository {
     final index = _orders.indexWhere((existing) => existing.id == order.id);
     if (index == -1) return const Failure(NotFound());
     // Like the server's UPDATE … WHERE status = from: a change made in the meantime wins.
-    if (_orders[index].status.runtimeType != from.runtimeType) return const Failure(OrderChanged());
+    final current = _orders[index].status;
+    if (current.runtimeType != from.runtimeType) return Failure(InvalidTransition(from: current, to: order.status));
     _orders[index] = order;
     return Success(order);
   }

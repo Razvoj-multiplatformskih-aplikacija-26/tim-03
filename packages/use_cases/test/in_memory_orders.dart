@@ -74,7 +74,8 @@ final class InMemoryOrders implements OrderRepository {
     _maybeFail();
     final index = orders.indexWhere((o) => o.id == order.id);
     if (index == -1) return const Failure(NotFound());
-    if (orders[index].status.runtimeType != from.runtimeType) return const Failure(OrderChanged());
+    final current = orders[index].status;
+    if (current.runtimeType != from.runtimeType) return Failure(InvalidTransition(from: current, to: order.status));
     orders[index] = order;
     return Success(order);
   }

@@ -11,7 +11,6 @@ extension DomainErrorMessage on DomainError {
     OutsideOpeningHours() => 'Termin je van radnog vremena centra.',
     CancellationTooLate(:final notice) => 'Nalog može da se otkaže najkasnije ${durationLabel(notice)} pre početka.',
     InvalidTransition() => 'Ova promena naloga nije moguća.',
-    OrderChanged() => 'Nalog je u međuvremenu promenjen. Pokušaj ponovo.',
     PetAlreadyBooked() => 'Ljubimac već ima nalog u tom periodu.',
     NoKennelAvailable() => 'Nema slobodnog boksa za izabrani period.',
     StaffNotAvailable() => 'Nema slobodnog osoblja za izabrani termin.',
