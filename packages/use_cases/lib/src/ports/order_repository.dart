@@ -9,5 +9,6 @@ abstract interface class OrderRepository {
 
   Future<Result<ServiceOrder>> create(OrderRequest request);
 
-  Future<ServiceOrder> save(ServiceOrder order);
+  /// Stores [order] only if the stored order is still in the [from] state; otherwise answers [OrderChanged].
+  Future<Result<ServiceOrder>> save(ServiceOrder order, {required OrderStatus from});
 }

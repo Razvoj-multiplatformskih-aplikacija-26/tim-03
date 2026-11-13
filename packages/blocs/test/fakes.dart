@@ -59,9 +59,9 @@ final class InMemoryOrders implements OrderRepository {
   }
 
   @override
-  Future<ServiceOrder> save(ServiceOrder order) async {
+  Future<Result<ServiceOrder>> save(ServiceOrder order, {required OrderStatus from}) async {
     _maybeFail();
     orders[orders.indexWhere((o) => o.id == order.id)] = order;
-    return order;
+    return Success(order);
   }
 }

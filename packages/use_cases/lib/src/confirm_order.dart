@@ -3,6 +3,7 @@ import 'package:domain/domain.dart';
 import 'clock.dart';
 import 'ports/board_repository.dart';
 import 'ports/order_repository.dart';
+import 'retry_on_change.dart';
 
 final class ConfirmOrder {
   const ConfirmOrder({required this.orders, required this.boards, required this.clock});
@@ -11,7 +12,8 @@ final class ConfirmOrder {
   final BoardRepository boards;
   final Clock clock;
 
-  Future<Result<ServiceOrder>> call({required OrderId id, required User by}) async {
+  /// The board is read again on every attempt, so a kennel or a staff member taken in the meantime is chosen again.
+  Future<Result<ServiceOrder>> call({required OrderId id, required User by}) => retryOnChange(() async {
     final board = await boards.board();
     final order = board.orderById(id);
     final pet = order == null ? null : board.petOf(order);
@@ -27,7 +29,7 @@ final class ConfirmOrder {
     );
     return switch (result) {
       Failure(:final error) => Failure(error),
-      Success(:final value) => Success(await orders.save(value)),
+      Success(:final value) => await orders.save(value, from: order.status),
     };
-  }
+  });
 }
