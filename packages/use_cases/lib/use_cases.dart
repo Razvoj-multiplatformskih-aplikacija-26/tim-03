@@ -12,5 +12,7 @@ export 'src/ports/board_repository.dart';
 export 'src/ports/center_repository.dart';
 export 'src/ports/order_repository.dart';
 export 'src/ports/pet_repository.dart';
+export 'src/ports/session_repository.dart';
 export 'src/reject_order.dart';
 export 'src/repository_exception.dart';
+export 'src/sessions.dart';
