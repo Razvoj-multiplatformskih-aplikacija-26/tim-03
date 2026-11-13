@@ -79,7 +79,9 @@ Result<ServiceOrder> cancelOrder(ServiceOrder order, {required User by, required
   if (!AccessPolicy.canCancel(by, order)) return const Failure(NotAllowed());
   final next = Cancelled(reason: reason, cancelledBy: by.id, at: now.toUtc());
   if (!canTransition(order.status, next)) return Failure(InvalidTransition(from: order.status, to: next));
-  if (by.role == Role.owner && !ownerMayStillCancel(order, now: now)) return const Failure(CancellationTooLate());
+  if (by.role == Role.owner && !ownerMayStillCancel(order, now: now)) {
+    return const Failure(CancellationTooLate(notice: cancellationNotice));
+  }
   return Success(order.copyWith(status: next));
 }
 

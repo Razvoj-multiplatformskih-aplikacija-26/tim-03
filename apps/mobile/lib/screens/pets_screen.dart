@@ -5,50 +5,57 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
 
-import '../data/seed.dart';
-import '../dependencies.dart';
-
 class PetsScreen extends StatelessWidget {
   const PetsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final owner = context.read<AppDependencies>().owner;
-    final pets = fakePets.where((pet) => pet.ownerId == owner.id).toList();
     return Scaffold(
       appBar: AppBar(title: const Text('Moji ljubimci')),
       body: BlocBuilder<MyOrdersBloc, MyOrdersState>(
-        builder: (context, state) => Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [
-                for (final pet in pets)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _PetCard(pet: pet, activeOrders: _activeOrders(state, pet)),
-                  ),
-              ],
+        builder: (context, state) => switch (state) {
+          MyOrdersLoading() => Center(
+            child: Semantics(label: 'Učitavanje ljubimaca', child: const CircularProgressIndicator()),
+          ),
+          MyOrdersFailure() => Center(
+            child: FailureView(
+              title: 'Ljubimci nisu učitani.',
+              onRetry: () => context.read<MyOrdersBloc>().add(const MyOrdersRequested()),
             ),
           ),
-        ),
+          MyOrdersEmpty(:final pets) || MyOrdersLoaded(:final pets) => Center(
+            child: pets.isEmpty
+                ? const EmptyView(title: 'Nemate ljubimaca.')
+                : ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 720),
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      children: [
+                        for (final pet in pets)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _PetCard(pet: pet, activeOrders: _activeOrders(state, pet)),
+                          ),
+                      ],
+                    ),
+                  ),
+          ),
+        },
       ),
     );
   }
 }
 
-int? _activeOrders(MyOrdersState state, Pet pet) => switch (state) {
+int _activeOrders(MyOrdersState state, Pet pet) => switch (state) {
   MyOrdersLoaded(:final orders) => orders.where((order) => order.petId == pet.id && order.isActive).length,
-  MyOrdersEmpty() => 0,
-  MyOrdersLoading() || MyOrdersFailure() => null,
+  MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => 0,
 };
 
 class _PetCard extends StatelessWidget {
   const _PetCard({required this.pet, required this.activeOrders});
 
   final Pet pet;
-  final int? activeOrders;
+  final int activeOrders;
 
   @override
   Widget build(BuildContext context) {
@@ -77,10 +84,8 @@ class _PetCard extends StatelessWidget {
                         Text(pet.name, style: theme.textTheme.titleLarge),
                         const SizedBox(height: 2),
                         Text(pet.description, style: mutedStyle),
-                        if (activeOrders case final count?) ...[
-                          const SizedBox(height: 2),
-                          Text(activeOrdersLabel(count), style: mutedStyle),
-                        ],
+                        const SizedBox(height: 2),
+                        Text(activeOrdersLabel(activeOrders), style: mutedStyle),
                       ],
                     ),
                   ),

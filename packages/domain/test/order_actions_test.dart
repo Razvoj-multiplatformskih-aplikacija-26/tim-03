@@ -72,7 +72,10 @@ void main() {
 
     test('refuses the owner one minute after the deadline', () {
       final now = start.subtract(const Duration(hours: 23, minutes: 59));
-      expect(cancelOrder(orderAt(start), by: owner, now: now), const Failure<ServiceOrder>(CancellationTooLate()));
+      expect(
+        cancelOrder(orderAt(start), by: owner, now: now),
+        const Failure<ServiceOrder>(CancellationTooLate(notice: Duration(hours: 24))),
+      );
     });
 
     test('lets the manager cancel a confirmed order one hour before the start', () {

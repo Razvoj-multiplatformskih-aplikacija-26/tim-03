@@ -59,9 +59,14 @@ final class FakeCenter implements OrderRepository, BoardRepository {
   }
 
   @override
-  Future<ServiceOrder> save(ServiceOrder order) async {
+  Future<Result<ServiceOrder>> save(ServiceOrder order, {required OrderStatus from}) async {
     await _roundTrip();
-    _orders[_orders.indexWhere((existing) => existing.id == order.id)] = order;
-    return order;
+    final index = _orders.indexWhere((existing) => existing.id == order.id);
+    if (index == -1) return const Failure(NotFound());
+    // Like the server's UPDATE … WHERE status = from: a change made in the meantime wins.
+    final current = _orders[index].status;
+    if (current.runtimeType != from.runtimeType) return Failure(InvalidTransition(from: current, to: order.status));
+    _orders[index] = order;
+    return Success(order);
   }
 }

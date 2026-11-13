@@ -5,15 +5,22 @@ import 'data/fake_center.dart';
 import 'data/seed.dart';
 
 final class AppDependencies {
-  const AppDependencies({required this.orders, required this.clock, required this.owner});
+  const AppDependencies({
+    required this.orders,
+    required this.pets,
+    required this.center,
+    required this.clock,
+    required this.owner,
+  });
 
-  factory AppDependencies.fake({Clock clock = const SystemClock(), Duration? latency}) => AppDependencies(
-    orders: latency == null ? FakeCenter(clock: clock) : FakeCenter(clock: clock, latency: latency),
-    clock: clock,
-    owner: currentOwner,
-  );
+  factory AppDependencies.fake({Clock clock = const SystemClock(), Duration? latency}) {
+    final fake = latency == null ? FakeCenter(clock: clock) : FakeCenter(clock: clock, latency: latency);
+    return AppDependencies(orders: fake, pets: fake, center: fake, clock: clock, owner: currentOwner);
+  }
 
   final OrderRepository orders;
+  final PetRepository pets;
+  final CenterRepository center;
   final Clock clock;
 
   final User owner;

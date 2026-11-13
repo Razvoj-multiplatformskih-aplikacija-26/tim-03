@@ -22,6 +22,7 @@ class SapaApp extends StatelessWidget {
       child: BlocProvider(
         create: (_) => MyOrdersBloc(
           getMyOrders: GetMyOrders(orders: dependencies.orders),
+          getMyPets: GetMyPets(pets: dependencies.pets),
           cancelOrder: CancelOrder(orders: dependencies.orders, clock: dependencies.clock),
           clock: dependencies.clock,
           owner: dependencies.owner,

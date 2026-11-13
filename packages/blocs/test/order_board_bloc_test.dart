@@ -29,10 +29,10 @@ final class _Center implements OrderRepository, BoardRepository {
   );
 
   @override
-  Future<ServiceOrder> save(ServiceOrder order) async {
+  Future<Result<ServiceOrder>> save(ServiceOrder order, {required OrderStatus from}) async {
     await gate?.future;
     orders[orders.indexWhere((o) => o.id == order.id)] = order;
-    return order;
+    return Success(order);
   }
 
   @override

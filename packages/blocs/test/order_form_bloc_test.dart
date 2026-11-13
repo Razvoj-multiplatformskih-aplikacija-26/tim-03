@@ -7,6 +7,8 @@ import 'package:use_cases/use_cases.dart';
 import 'fakes.dart';
 
 void main() {
+  setUpAll(initializeDomainTimeZones);
+
   const ownersPet = Pet(id: rex, ownerId: UserId('u-owner'), name: 'Reks', species: Species.dog, size: PetSize.large);
   const someoneElsesPet = Pet(
     id: PetId('p-other'),
@@ -22,10 +24,21 @@ void main() {
 
   setUp(() => repository = InMemoryOrders());
 
-  OrderFormBloc build() => OrderFormBloc(
-    placeOrder: PlaceOrder(orders: repository),
-    owner: owner,
-  );
+  OrderFormBloc build() {
+    final center = InMemoryCenter();
+    return OrderFormBloc(
+      placeOrder: PlaceOrder(orders: repository),
+      getMyPets: GetMyPets(pets: center),
+      getOpeningHours: GetOpeningHours(center: center),
+      owner: owner,
+    );
+  }
+
+  /// Loads the pets and the opening hours; the test then skips the loading and editing states.
+  Future<void> start(OrderFormBloc bloc) async {
+    bloc.add(const OrderFormStarted());
+    await bloc.stream.firstWhere((state) => state is OrderFormEditing);
+  }
 
   OrderFormSubmitted submitted(Pet pet) =>
       OrderFormSubmitted(pet: pet, service: ServiceType.grooming, period: grooming);
@@ -33,9 +46,13 @@ void main() {
   blocTest<OrderFormBloc, OrderFormState>(
     'sends the order and hands back the stored one',
     build: build,
-    act: (bloc) => bloc.add(submitted(ownersPet)),
+    act: (bloc) async {
+      await start(bloc);
+      bloc.add(submitted(ownersPet));
+    },
+    skip: 2,
     expect: () => [
-      const OrderFormSubmitting(),
+      isA<OrderFormSubmitting>(),
       isA<OrderFormSucceeded>().having((s) => s.order.status, 'status', const Pending()),
     ],
     verify: (_) => expect(repository.orders, hasLength(1)),
@@ -44,8 +61,15 @@ void main() {
   blocTest<OrderFormBloc, OrderFormState>(
     'reports the domain\'s refusal as a type, not as text',
     build: build,
-    act: (bloc) => bloc.add(submitted(someoneElsesPet)),
-    expect: () => [const OrderFormSubmitting(), const OrderFormRejected(NotAllowed())],
+    act: (bloc) async {
+      await start(bloc);
+      bloc.add(submitted(someoneElsesPet));
+    },
+    skip: 2,
+    expect: () => [
+      isA<OrderFormSubmitting>(),
+      isA<OrderFormRejected>().having((s) => s.error, 'error', const NotAllowed()),
+    ],
   );
 
   blocTest<OrderFormBloc, OrderFormState>(
@@ -54,17 +78,25 @@ void main() {
       repository.failing = true;
       return build();
     },
-    act: (bloc) => bloc.add(submitted(ownersPet)),
-    expect: () => [const OrderFormSubmitting(), isA<OrderFormFailed>()],
+    act: (bloc) async {
+      await start(bloc);
+      bloc.add(submitted(ownersPet));
+    },
+    skip: 2,
+    expect: () => [isA<OrderFormSubmitting>(), isA<OrderFormFailed>()],
   );
 
   blocTest<OrderFormBloc, OrderFormState>(
     'sends once even if the button is pressed twice',
     build: build,
-    act: (bloc) => bloc
-      ..add(submitted(ownersPet))
-      ..add(submitted(ownersPet)),
-    expect: () => [const OrderFormSubmitting(), isA<OrderFormSucceeded>()],
+    act: (bloc) async {
+      await start(bloc);
+      bloc
+        ..add(submitted(ownersPet))
+        ..add(submitted(ownersPet));
+    },
+    skip: 2,
+    expect: () => [isA<OrderFormSubmitting>(), isA<OrderFormSucceeded>()],
     verify: (_) => expect(repository.orders, hasLength(1)),
   );
 }

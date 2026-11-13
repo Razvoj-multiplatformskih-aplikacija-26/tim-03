@@ -27,12 +27,18 @@ final class MyOrdersFailure extends MyOrdersState {
 }
 
 final class MyOrdersEmpty extends MyOrdersState {
-  const MyOrdersEmpty();
+  const MyOrdersEmpty(this.pets);
+
+  final List<Pet> pets;
+
+  @override
+  List<Object?> get props => [pets];
 }
 
 final class MyOrdersLoaded extends MyOrdersState {
   const MyOrdersLoaded({
     required this.orders,
+    required this.pets,
     required this.now,
     required this.cancellable,
     required this.tooLateToCancel,
@@ -42,6 +48,8 @@ final class MyOrdersLoaded extends MyOrdersState {
   });
 
   final List<ServiceOrder> orders;
+
+  final List<Pet> pets;
 
   final DateTime now;
 
@@ -56,7 +64,7 @@ final class MyOrdersLoaded extends MyOrdersState {
   final MyOrdersNotice? notice;
 
   @override
-  List<Object?> get props => [orders, now, cancellable, tooLateToCancel, petFilter, cancellingId, notice];
+  List<Object?> get props => [orders, pets, now, cancellable, tooLateToCancel, petFilter, cancellingId, notice];
 
   @override
   String toString() => [
@@ -84,6 +92,10 @@ final class MyOrdersLoaded extends MyOrdersState {
 
   ServiceOrder? byId(OrderId id) => orders.where((order) => order.id == id).firstOrNull;
 
+  Pet? petById(PetId id) => pets.where((pet) => pet.id == id).firstOrNull;
+
+  Pet? petOf(ServiceOrder order) => petById(order.petId);
+
   bool canCancel(ServiceOrder order) => cancellable.contains(order.id);
 
   bool isTooLateToCancel(ServiceOrder order) => tooLateToCancel.contains(order.id);
@@ -94,6 +106,7 @@ final class MyOrdersLoaded extends MyOrdersState {
 
   MyOrdersLoaded withPetFilter(PetId? petFilter) => MyOrdersLoaded(
     orders: orders,
+    pets: pets,
     now: now,
     cancellable: cancellable,
     tooLateToCancel: tooLateToCancel,
@@ -103,6 +116,7 @@ final class MyOrdersLoaded extends MyOrdersState {
 
   MyOrdersLoaded withCancelling(OrderId id) => MyOrdersLoaded(
     orders: orders,
+    pets: pets,
     now: now,
     cancellable: cancellable,
     tooLateToCancel: tooLateToCancel,
@@ -112,6 +126,7 @@ final class MyOrdersLoaded extends MyOrdersState {
 
   MyOrdersLoaded withNotice(MyOrdersNotice? notice) => MyOrdersLoaded(
     orders: orders,
+    pets: pets,
     now: now,
     cancellable: cancellable,
     tooLateToCancel: tooLateToCancel,

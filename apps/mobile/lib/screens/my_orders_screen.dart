@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
 
 import '../data/fake_center.dart';
-import '../data/seed.dart';
 import '../dependencies.dart';
 
 typedef _Group = (String title, List<ServiceOrder> orders);
@@ -29,8 +28,6 @@ class MyOrdersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<MyOrdersBloc>();
-    final owner = context.read<AppDependencies>().owner;
-    final pets = fakePets.where((pet) => pet.ownerId == owner.id).toList();
     return BlocConsumer<MyOrdersBloc, MyOrdersState>(
       listenWhen: (previous, current) => current is MyOrdersLoaded && current.notice != null,
       listener: (context, state) => _showNotice(context, (state as MyOrdersLoaded).notice!),
@@ -82,10 +79,10 @@ class MyOrdersScreen extends StatelessWidget {
               ),
               MyOrdersLoaded() => _LoadedBody(
                 state: state,
-                filter: pets.length < 2
+                filter: state.pets.length < 2
                     ? null
                     : _PetFilter(
-                        pets: pets,
+                        pets: state.pets,
                         selected: petFilter,
                         onSelected: (id) => bloc.add(MyOrdersPetFilterChanged(id)),
                       ),
@@ -107,19 +104,21 @@ class _LoadedBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final petFilter = state.petFilter;
-    final forPet = petFilter == null ? '' : ' za ljubimca ${petById(petFilter)?.name}';
+    final forPet = petFilter == null ? '' : ' za ljubimca ${state.petById(petFilter)?.name}';
     return TabBarView(
       children: [
         _OrderList(
           key: const PageStorageKey('current'),
           filter: filter,
           groups: _currentGroups(state.current, now: state.now),
+          petOf: state.petOf,
           emptyText: 'Nema aktuelnih naloga$forPet.',
         ),
         _OrderList(
           key: const PageStorageKey('history'),
           filter: filter,
           groups: _historyGroups(state.history),
+          petOf: state.petOf,
           emptyText: 'Nema prethodnih naloga$forPet.',
         ),
       ],
@@ -199,10 +198,17 @@ class _PetFilter extends StatelessWidget {
 }
 
 class _OrderList extends StatelessWidget {
-  const _OrderList({super.key, required this.filter, required this.groups, required this.emptyText});
+  const _OrderList({
+    super.key,
+    required this.filter,
+    required this.groups,
+    required this.petOf,
+    required this.emptyText,
+  });
 
   final Widget? filter;
   final List<_Group> groups;
+  final Pet? Function(ServiceOrder order) petOf;
   final String emptyText;
 
   @override
@@ -228,7 +234,7 @@ class _OrderList extends StatelessWidget {
               ),
             for (final (title, orders) in filled) ...[
               _SectionTitle(title, count: orders.length),
-              for (final order in orders) _OrderTile(order: order),
+              for (final order in orders) _OrderTile(order: order, pet: petOf(order)),
             ],
           ],
         ),
@@ -238,23 +244,25 @@ class _OrderList extends StatelessWidget {
 }
 
 class _OrderTile extends StatelessWidget {
-  const _OrderTile({required this.order});
+  const _OrderTile({required this.order, required this.pet});
 
   final ServiceOrder order;
+  final Pet? pet;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: _OrderCard(order: order, onOpen: () => context.push('/orders/${order.id.value}')),
+      child: _OrderCard(order: order, pet: pet, onOpen: () => context.push('/orders/${order.id.value}')),
     );
   }
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.order, required this.onOpen});
+  const _OrderCard({required this.order, required this.pet, required this.onOpen});
 
   final ServiceOrder order;
+  final Pet? pet;
   final VoidCallback onOpen;
 
   @override
@@ -262,7 +270,7 @@ class _OrderCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final now = DateTime.now();
-    final pet = petById(order.petId);
+    final pet = this.pet;
     final start = order.period.start;
     final reason = switch (order.status) {
       Rejected(:final reason) || Cancelled(:final reason) when reason.isNotEmpty => reason,

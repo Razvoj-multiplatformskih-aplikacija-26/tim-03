@@ -9,8 +9,8 @@ void main() {
     });
 
     test('rejects zero and thirty-one nights', () {
-      expect(StayLength.parse(0), const Failure<StayLength>(InvalidStayLength(0)));
-      expect(StayLength.parse(31), const Failure<StayLength>(InvalidStayLength(31)));
+      expect(StayLength.parse(0), const Failure<StayLength>(InvalidStayLength(0, min: 1, max: 30)));
+      expect(StayLength.parse(31), const Failure<StayLength>(InvalidStayLength(31, min: 1, max: 30)));
     });
   });
 }

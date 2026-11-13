@@ -15,7 +15,7 @@ final class StayLength {
   final int value;
 
   static Result<StayLength> parse(int value) {
-    if (value < min || value > max) return Failure(InvalidStayLength(value));
+    if (value < min || value > max) return Failure(InvalidStayLength(value, min: min, max: max));
     return Success(StayLength._(value));
   }
 

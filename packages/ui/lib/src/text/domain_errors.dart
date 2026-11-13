@@ -4,13 +4,12 @@ import 'serbian.dart';
 
 extension DomainErrorMessage on DomainError {
   String get message => switch (this) {
-    NoteTooLong() => 'Napomena može imati najviše ${OrderNote.maxLength} znakova.',
-    InvalidStayLength() => 'Boravak traje od ${StayLength.min} do ${StayLength.max} noći.',
+    NoteTooLong(:final max) => 'Napomena može imati najviše $max znakova.',
+    InvalidStayLength(:final min, :final max) => 'Boravak traje od $min do $max noći.',
     PeriodInPast() => 'Izabrani termin je prošao.',
     NotOnHalfHour() => 'Termin počinje na pun sat ili pola sata.',
     OutsideOpeningHours() => 'Termin je van radnog vremena centra.',
-    CancellationTooLate() =>
-      'Nalog može da se otkaže najkasnije ${hoursLabel(cancellationNotice.inHours)} pre početka.',
+    CancellationTooLate(:final notice) => 'Nalog može da se otkaže najkasnije ${durationLabel(notice)} pre početka.',
     InvalidTransition() => 'Ova promena naloga nije moguća.',
     PetAlreadyBooked() => 'Ljubimac već ima nalog u tom periodu.',
     NoKennelAvailable() => 'Nema slobodnog boksa za izabrani period.',
