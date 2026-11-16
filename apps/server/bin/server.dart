@@ -11,8 +11,14 @@ Future<void> main() async {
   final config = ServerConfig.fromEnvironment(serverEnvironment());
   final database = Pool<void>.withUrl(config.databaseUrl);
   await seedDemoData(database, now: DateTime.now(), demoPassword: config.demoPassword);
+  final sessions = SessionHandlers(
+    accounts: AccountStore(database),
+    secret: config.jwtSecret,
+    ttl: config.sessionTtl,
+    secureCookie: config.secureCookie,
+  );
   final server = RelicServer(() => IOAdapter.bind(InternetAddress(config.host), port: config.port));
-  await server.mountAndStart(buildHandler());
+  await server.mountAndStart(buildHandler(sessions));
   stdout.writeln('Šapa server on http://${config.host}:${config.port}');
   await _stopSignal();
   await server.close();
