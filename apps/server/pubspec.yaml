@@ -1,0 +1,13 @@
+name: server
+description: Pet care center HTTP server on Relic and PostgreSQL that runs the same domain rules as the clients.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.13.0
+resolution: workspace
+
+dependencies:
+  api_contract:
+    path: ../../packages/api_contract
+  relic: 1.2.0
