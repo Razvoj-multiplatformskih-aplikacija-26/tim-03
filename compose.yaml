@@ -17,6 +17,18 @@ services:
       timeout: 3s
       retries: 30
 
+  migrate:
+    image: ghcr.io/amacneil/dbmate:2.37.0
+    command: ["--wait", "--no-dump-schema", "up"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-sapa}:${POSTGRES_PASSWORD:?Copy .env.example to .env first}@db:5432/${POSTGRES_DB:-sapa}?sslmode=disable
+      DBMATE_MIGRATIONS_DIR: /migrations
+    volumes:
+      - ./apps/server/migrations:/migrations:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
   server:
     build:
       context: .
@@ -26,8 +38,8 @@ services:
     ports:
       - "${SERVER_PORT:-8080}:8080"
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   db-data:
