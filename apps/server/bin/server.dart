@@ -5,12 +5,18 @@ import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
 import 'package:relic/relic.dart' show IOAdapter, RelicServer;
 import 'package:server/server.dart';
+import 'package:use_cases/use_cases.dart';
 
 Future<void> main() async {
   initializeDomainTimeZones();
   final config = ServerConfig.fromEnvironment(serverEnvironment());
   final database = Pool<void>.withUrl(config.databaseUrl);
   await seedDemoData(database, now: DateTime.now(), demoPassword: config.demoPassword);
+  const clock = SystemClock();
+  final handlers = CenterHandlers(
+    center: PostgresCenter(CenterStore(database), clock: clock),
+    clock: clock,
+  );
   final sessions = SessionHandlers(
     accounts: AccountStore(database),
     secret: config.jwtSecret,
@@ -18,7 +24,7 @@ Future<void> main() async {
     secureCookie: config.secureCookie,
   );
   final server = RelicServer(() => IOAdapter.bind(InternetAddress(config.host), port: config.port));
-  await server.mountAndStart(buildHandler(sessions));
+  await server.mountAndStart(buildHandler(handlers, sessions, corsOrigins: config.corsOrigins));
   stdout.writeln('Šapa server on http://${config.host}:${config.port}');
   await _stopSignal();
   await server.close();

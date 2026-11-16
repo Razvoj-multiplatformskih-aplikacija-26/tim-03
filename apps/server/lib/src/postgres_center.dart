@@ -24,6 +24,8 @@ final class PostgresCenter implements OrderRepository, BoardRepository, PetRepos
   @override
   Future<ServiceOrder?> find(OrderId id) => _store.find(id);
 
+  Future<Pet?> pet(PetId id) => _store.pet(id);
+
   @override
   Future<CenterBoard> board() async => CenterBoard(
     orders: await _store.orders(),

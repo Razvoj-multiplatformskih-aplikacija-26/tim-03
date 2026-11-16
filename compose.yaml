@@ -39,6 +39,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Copy .env.example to .env first}
       SESSION_TTL_MINUTES: ${SESSION_TTL_MINUTES:-480}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081}
     ports:
       - "${SERVER_PORT:-8080}:8080"
     depends_on:

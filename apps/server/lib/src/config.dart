@@ -5,6 +5,7 @@ final class ServerConfig {
     required this.host,
     required this.port,
     required this.databaseUrl,
+    required this.corsOrigins,
     this.sessionTtl = const Duration(hours: 8),
     this.secureCookie = false,
     this.demoPassword,
@@ -17,6 +18,10 @@ final class ServerConfig {
     databaseUrl:
         environment['DATABASE_URL'] ??
         (throw StateError('DATABASE_URL is not set. Copy .env.example to .env in the repository root.')),
+    corsOrigins: [
+      for (final origin in (environment['CORS_ORIGINS'] ?? 'http://localhost:8081').split(','))
+        if (origin.trim().isNotEmpty) origin.trim(),
+    ],
     sessionTtl: Duration(minutes: int.parse(environment['SESSION_TTL_MINUTES'] ?? '480')),
     secureCookie: environment['COOKIE_SECURE'] == 'true',
     demoPassword: environment['DEMO_PASSWORD'],
@@ -26,6 +31,7 @@ final class ServerConfig {
   final String host;
   final int port;
   final String databaseUrl;
+  final List<String> corsOrigins;
   final Duration sessionTtl;
   final bool secureCookie;
   final String? demoPassword;
