@@ -1,0 +1,19 @@
+abstract final class ErrorCodes {
+  static const noteTooLong = 'note-too-long';
+  static const invalidStayLength = 'invalid-stay-length';
+  static const periodInPast = 'period-in-past';
+  static const notOnHalfHour = 'not-on-half-hour';
+  static const outsideOpeningHours = 'outside-opening-hours';
+  static const cancellationTooLate = 'cancellation-too-late';
+  static const invalidTransition = 'invalid-transition';
+  static const petAlreadyBooked = 'pet-already-booked';
+  static const noKennelAvailable = 'no-kennel-available';
+  static const staffNotAvailable = 'staff-not-available';
+  static const notAllowed = 'not-allowed';
+  static const notFound = 'not-found';
+  static const badRequest = 'bad-request';
+  static const serverError = 'server-error';
+  static const invalidCredentials = 'invalid-credentials';
+  static const sessionExpired = 'session-expired';
+  static const signInRequired = 'sign-in-required';
+}
