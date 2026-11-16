@@ -12,6 +12,8 @@ abstract final class AccessPolicy {
 
   static bool canView(User user, ServiceOrder order) => user.role.isStaff || order.ownerId == user.id;
 
+  static bool canViewPet(User user, Pet pet) => user.role.isStaff || pet.ownerId == user.id;
+
   static bool canPlaceOrder(User user, Pet pet) => user.role == Role.owner && pet.ownerId == user.id;
 
   static bool canCancel(User user, ServiceOrder order) => user.role == Role.manager || order.ownerId == user.id;
