@@ -46,7 +46,6 @@ final class OrderBoardBloc extends Bloc<OrderBoardEvent, OrderBoardState> {
     if (current is! OrderBoardLoaded || current.isEmpty) return;
     final rows = current.rows;
     final index = rows.indexWhere((order) => order.id == current.selectedId);
-    // With nothing selected, down starts at the first order and up at the last.
     final next = index < 0 ? (event.steps > 0 ? 0 : rows.length - 1) : (index + event.steps).clamp(0, rows.length - 1);
     emit(current.copyWith(selectedId: rows[next].id));
   }

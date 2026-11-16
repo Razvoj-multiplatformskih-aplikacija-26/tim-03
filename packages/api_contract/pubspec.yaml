@@ -1,0 +1,8 @@
+name: api_contract
+description: Pet care center HTTP contract shared by the clients and the server, with paths, error codes and JSON shapes.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.13.0
+resolution: workspace
