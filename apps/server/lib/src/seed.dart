@@ -1,6 +1,7 @@
 import 'package:domain/domain.dart';
 import 'package:postgres/postgres.dart';
 
+import 'center_store.dart';
 import 'passwords.dart';
 
 const _caretaker = User(id: UserId('u-caretaker'), name: 'Marija Ilić', role: Role.caretaker);
@@ -109,8 +110,7 @@ OpeningHours demoOpeningHours() => OpeningHours({
 
 /// Writes the demo data only into an empty database, so a restart keeps what the clients changed.
 Future<void> seedDemoData(Pool<void> database, {required DateTime now, required String? demoPassword}) async {
-  final users = await database.execute('SELECT count(*) FROM users');
-  if (users.single[0] != 0) return;
+  if (!await CenterStore(database).isEmpty()) return;
   if (demoPassword == null || demoPassword.isEmpty) {
     throw StateError('DEMO_PASSWORD is not set. Copy .env.example to .env in the repository root.');
   }
@@ -158,64 +158,11 @@ Future<void> _seed(Session database, {required DateTime now, required String dem
       parameters: {'weekday': weekday, 'opens': '${day.open}', 'closes': '${day.close}'},
     );
   }
+  final store = CenterStore(database);
   for (final order in demoOrders(now: now, hours: hours)) {
-    await _insertOrder(database, order);
+    await store.insert(order);
   }
 }
-
-Future<void> _insertOrder(Session database, ServiceOrder order) {
-  final (:kind, :by, :at, :reason) = _statusColumns(order.status);
-  final end = order.period.end;
-  return database.execute(
-    Sql.named('''
-      INSERT INTO orders
-        (owner_id, pet_id, service, starts_at, ends_at, busy_until, note, kennel_id, assignee_id,
-         status, status_by, status_at, status_reason, created_at)
-      VALUES
-        (@owner, @pet, @service, @starts, @ends, @busyUntil, @note, @kennel, @assignee,
-         @status, @statusBy, @statusAt, @reason, @created)
-    '''),
-    parameters: {
-      'owner': order.ownerId.value,
-      'pet': order.petId.value,
-      'service': _serviceColumn(order.service),
-      'starts': order.period.start,
-      'ends': end,
-      // R8 in the database: a walker is busy until the end plus the travel time from the domain.
-      'busyUntil': order.service == ServiceType.walk ? end.add(walkTravelTime) : end,
-      'note': order.note?.text,
-      'kennel': order.kennelId?.value,
-      'assignee': order.assigneeId?.value,
-      'status': kind,
-      'statusBy': by?.value,
-      'statusAt': at,
-      'reason': reason,
-      'created': order.createdAt,
-    },
-  );
-}
-
-String _serviceColumn(ServiceType service) => switch (service) {
-  ServiceType.boarding => 'boarding',
-  ServiceType.grooming => 'grooming',
-  ServiceType.vetCheckup => 'vet_checkup',
-  ServiceType.walk => 'walk',
-};
-
-({String kind, UserId? by, DateTime? at, String? reason}) _statusColumns(OrderStatus status) => switch (status) {
-  Pending() => (kind: 'pending', by: null, at: null, reason: null),
-  Confirmed(:final confirmedBy, :final at) => (kind: 'confirmed', by: confirmedBy, at: at, reason: null),
-  InProgress(:final receivedBy, :final at) => (kind: 'in_progress', by: receivedBy, at: at, reason: null),
-  ReadyForPickup(:final at) => (kind: 'ready_for_pickup', by: null, at: at, reason: null),
-  Completed(:final at) => (kind: 'completed', by: null, at: at, reason: null),
-  Rejected(:final reason, :final rejectedBy, :final at) => (kind: 'rejected', by: rejectedBy, at: at, reason: reason),
-  Cancelled(:final reason, :final cancelledBy, :final at) => (
-    kind: 'cancelled',
-    by: cancelledBy,
-    at: at,
-    reason: reason,
-  ),
-};
 
 /// The same orders as the backoffice's fake data, dated from [now]: at least one in each of the seven states.
 /// The database gives every order its own id, so the ids here are only labels.

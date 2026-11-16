@@ -16,3 +16,5 @@ dependencies:
   pool: 1.5.3
   postgres: 3.5.18
   relic: 1.2.0
+  use_cases:
+    path: ../../packages/use_cases
