@@ -1,16 +1,22 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:domain/domain.dart';
+import 'package:postgres/postgres.dart';
 import 'package:relic/relic.dart' show IOAdapter, RelicServer;
 import 'package:server/server.dart';
 
 Future<void> main() async {
+  initializeDomainTimeZones();
   final config = ServerConfig.fromEnvironment(serverEnvironment());
+  final database = Pool<void>.withUrl(config.databaseUrl);
+  await seedDemoData(database, now: DateTime.now(), demoPassword: config.demoPassword);
   final server = RelicServer(() => IOAdapter.bind(InternetAddress(config.host), port: config.port));
   await server.mountAndStart(buildHandler());
   stdout.writeln('Šapa server on http://${config.host}:${config.port}');
   await _stopSignal();
   await server.close();
+  await database.close();
 }
 
 // docker compose stop sends SIGTERM; Windows has no SIGTERM in dart:io, so there only Ctrl+C stops the server.
