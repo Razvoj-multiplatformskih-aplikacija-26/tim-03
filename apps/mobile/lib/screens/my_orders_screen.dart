@@ -7,8 +7,16 @@ import 'package:ui/ui.dart';
 
 import '../data/fake_center.dart';
 import '../dependencies.dart';
+import 'log_out_button.dart';
 
 typedef _Group = (String title, List<ServiceOrder> orders);
+
+/// Pull to refresh: the indicator spins until MyOrdersBloc has shown the new data.
+Future<void> refreshMyOrders(BuildContext context) {
+  final refresh = MyOrdersRefreshed();
+  context.read<MyOrdersBloc>().add(refresh);
+  return refresh.handled;
+}
 
 class MyOrdersScreen extends StatelessWidget {
   const MyOrdersScreen({super.key});
@@ -17,7 +25,7 @@ class MyOrdersScreen extends StatelessWidget {
     final message = switch (notice) {
       OrderCancelled() => 'Nalog je otkazan.',
       CancellationRejected(:final error) => error.message,
-      CancellationFailed() => 'Otkazivanje nije uspelo. Proverite vezu i pokušajte ponovo.',
+      CancellationFailed(:final cause) => failureMessage(cause),
     };
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -34,7 +42,7 @@ class MyOrdersScreen extends StatelessWidget {
       builder: (context, state) {
         final petFilter = switch (state) {
           MyOrdersLoaded(:final petFilter) => petFilter,
-          MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
+          MyOrdersSignedOut() || MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
         };
         return DefaultTabController(
           length: 2,
@@ -48,6 +56,7 @@ class MyOrdersScreen extends StatelessWidget {
                   onPressed: () => bloc.add(const MyOrdersRequested()),
                 ),
                 const _FakeDataMenu(),
+                const LogOutButton(),
               ],
               bottom: switch (state) {
                 MyOrdersLoaded() => TabBar(
@@ -56,7 +65,7 @@ class MyOrdersScreen extends StatelessWidget {
                     _TabLabel('Prethodni', count: state.history.length),
                   ],
                 ),
-                MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
+                MyOrdersSignedOut() || MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
               },
             ),
             floatingActionButton: FloatingActionButton.extended(
@@ -65,16 +74,27 @@ class MyOrdersScreen extends StatelessWidget {
               label: const Text('Zakaži uslugu'),
             ),
             body: switch (state) {
-              MyOrdersLoading() => Center(
+              MyOrdersSignedOut() || MyOrdersLoading() => Center(
                 child: Semantics(label: 'Učitavanje naloga', child: const CircularProgressIndicator()),
               ),
-              MyOrdersFailure() => Center(
-                child: FailureView(title: 'Nalozi nisu učitani.', onRetry: () => bloc.add(const MyOrdersRequested())),
+              MyOrdersFailure(:final cause) => Center(
+                child: FailureView(
+                  title: 'Nalozi nisu učitani.',
+                  cause: cause,
+                  onRetry: () => bloc.add(const MyOrdersRequested()),
+                ),
               ),
-              MyOrdersEmpty() => const Center(
-                child: EmptyView(
-                  title: 'Nemate naloga.',
-                  message: 'Zakažite pansion, kupanje, pregled ili šetnju za svog ljubimca.',
+              MyOrdersEmpty() => RefreshIndicator(
+                onRefresh: () => refreshMyOrders(context),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(vertical: 48),
+                  children: const [
+                    EmptyView(
+                      title: 'Nemate naloga.',
+                      message: 'Zakažite pansion, kupanje, pregled ili šetnju za svog ljubimca.',
+                    ),
+                  ],
                 ),
               ),
               MyOrdersLoaded() => _LoadedBody(
@@ -219,24 +239,28 @@ class _OrderList extends StatelessWidget {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-          children: [
-            ?filter,
-            if (filled.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 48),
-                child: Text(
-                  emptyText,
-                  style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  textAlign: TextAlign.center,
+        child: RefreshIndicator(
+          onRefresh: () => refreshMyOrders(context),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+            children: [
+              ?filter,
+              if (filled.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 48),
+                  child: Text(
+                    emptyText,
+                    style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
-            for (final (title, orders) in filled) ...[
-              _SectionTitle(title, count: orders.length),
-              for (final order in orders) _OrderTile(order: order, pet: petOf(order)),
+              for (final (title, orders) in filled) ...[
+                _SectionTitle(title, count: orders.length),
+                for (final order in orders) _OrderTile(order: order, pet: petOf(order)),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

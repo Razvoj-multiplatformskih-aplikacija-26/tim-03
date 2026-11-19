@@ -18,8 +18,7 @@ void main() {
       getMyPets: GetMyPets(pets: InMemoryCenter()),
       cancelOrder: CancelOrder(orders: repository, clock: FixedClock(mondayNine)),
       clock: FixedClock(mondayNine),
-      owner: owner,
-    )..add(const MyOrdersRequested());
+    )..add(const MyOrdersOwnerChanged(owner));
     await bloc.stream.firstWhere((state) => state is MyOrdersEmpty);
     await bloc.close();
 

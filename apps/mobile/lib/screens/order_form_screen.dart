@@ -21,9 +21,10 @@ class OrderFormScreen extends StatelessWidget {
         OrderFormLoading() => _Frame(
           child: Semantics(label: 'Učitavanje forme', child: const CircularProgressIndicator()),
         ),
-        OrderFormUnavailable() => _Frame(
+        OrderFormUnavailable(:final cause) => _Frame(
           child: FailureView(
             title: 'Forma nije učitana.',
+            cause: cause,
             onRetry: () => context.read<OrderFormBloc>().add(const OrderFormStarted()),
           ),
         ),
@@ -168,13 +169,16 @@ class _OrderFormState extends State<_OrderForm> {
     switch (state) {
       case OrderFormSucceeded():
         HapticFeedback.mediumImpact();
-        context.read<MyOrdersBloc>().add(const MyOrdersRefreshed());
+        context.read<MyOrdersBloc>().add(MyOrdersRefreshed());
         _showMessage('Nalog je poslat. Čeka potvrdu osoblja.');
         context.go('/orders');
       case OrderFormRejected(:final error):
+        // The server may know something this screen does not (another order for the pet, a new rule): say why
+        // and load the owner's orders again.
         _showMessage(error.message);
-      case OrderFormFailed():
-        _showMessage('Nalog nije poslat. Proverite vezu i pokušajte ponovo.');
+        context.read<MyOrdersBloc>().add(MyOrdersRefreshed());
+      case OrderFormFailed(:final cause):
+        _showMessage(failureMessage(cause));
       case OrderFormLoading() || OrderFormUnavailable() || OrderFormEditing() || OrderFormSubmitting():
         break;
     }

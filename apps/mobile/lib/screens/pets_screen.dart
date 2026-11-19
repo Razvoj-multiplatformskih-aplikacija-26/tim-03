@@ -5,40 +5,47 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
 
+import 'log_out_button.dart';
+import 'my_orders_screen.dart' show refreshMyOrders;
+
 class PetsScreen extends StatelessWidget {
   const PetsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Moji ljubimci')),
+      appBar: AppBar(title: const Text('Moji ljubimci'), actions: const [LogOutButton()]),
       body: BlocBuilder<MyOrdersBloc, MyOrdersState>(
         builder: (context, state) => switch (state) {
-          MyOrdersLoading() => Center(
+          MyOrdersSignedOut() || MyOrdersLoading() => Center(
             child: Semantics(label: 'Učitavanje ljubimaca', child: const CircularProgressIndicator()),
           ),
-          MyOrdersFailure() => Center(
+          MyOrdersFailure(:final cause) => Center(
             child: FailureView(
               title: 'Ljubimci nisu učitani.',
+              cause: cause,
               onRetry: () => context.read<MyOrdersBloc>().add(const MyOrdersRequested()),
             ),
           ),
-          MyOrdersEmpty(:final pets) || MyOrdersLoaded(:final pets) => Center(
-            child: pets.isEmpty
-                ? const EmptyView(title: 'Nemate ljubimaca.')
-                : ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 720),
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      children: [
-                        for (final pet in pets)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _PetCard(pet: pet, activeOrders: _activeOrders(state, pet)),
-                          ),
-                      ],
-                    ),
-                  ),
+          MyOrdersEmpty(:final pets) || MyOrdersLoaded(:final pets) => RefreshIndicator(
+            onRefresh: () => refreshMyOrders(context),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: [
+                    if (pets.isEmpty) const EmptyView(title: 'Nemate ljubimaca.'),
+                    for (final pet in pets)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _PetCard(pet: pet, activeOrders: _activeOrders(state, pet)),
+                      ),
+                  ],
+                ),
+              ),
+            ),
           ),
         },
       ),
@@ -48,7 +55,7 @@ class PetsScreen extends StatelessWidget {
 
 int _activeOrders(MyOrdersState state, Pet pet) => switch (state) {
   MyOrdersLoaded(:final orders) => orders.where((order) => order.petId == pet.id && order.isActive).length,
-  MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => 0,
+  MyOrdersSignedOut() || MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => 0,
 };
 
 class _PetCard extends StatelessWidget {

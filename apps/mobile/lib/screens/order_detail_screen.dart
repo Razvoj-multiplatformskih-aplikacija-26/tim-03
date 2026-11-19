@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ui/ui.dart';
 
-import '../dependencies.dart';
-
 class OrderDetailScreen extends StatelessWidget {
   const OrderDetailScreen({super.key, required this.id});
 
@@ -13,13 +11,16 @@ class OrderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final owner = context.read<AppDependencies>().owner;
+    final session = context.watch<SessionBloc>().state;
     return BlocBuilder<MyOrdersBloc, MyOrdersState>(
       builder: (context, state) => switch (state) {
-        MyOrdersLoading() => const _Loading(),
+        MyOrdersSignedOut() || MyOrdersLoading() => const _Loading(),
         MyOrdersFailure() || MyOrdersEmpty() => const _NotFound(),
         MyOrdersLoaded() => switch (state.byId(id)) {
-          final order? when AccessPolicy.canView(owner, order) => _DetailBody(order: order, state: state),
+          final order? when session is SignedIn && AccessPolicy.canView(session.user, order) => _DetailBody(
+            order: order,
+            state: state,
+          ),
           _ => const _NotFound(),
         },
       },

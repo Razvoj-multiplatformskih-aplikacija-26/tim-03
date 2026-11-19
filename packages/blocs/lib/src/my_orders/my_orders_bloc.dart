@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/domain.dart' as domain show cancelOrder;
@@ -8,18 +10,25 @@ part 'my_orders_event.dart';
 part 'my_orders_state.dart';
 
 final class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
-  MyOrdersBloc({
-    required this.getMyOrders,
-    required this.getMyPets,
-    required this.cancelOrder,
-    required this.clock,
-    required this.owner,
-  }) : super(const MyOrdersLoading()) {
+  MyOrdersBloc({required this.getMyOrders, required this.getMyPets, required this.cancelOrder, required this.clock})
+    : super(const MyOrdersLoading()) {
+    on<MyOrdersOwnerChanged>((event, emit) async {
+      _owner = event.owner;
+      if (event.owner == null) return emit(const MyOrdersSignedOut());
+      emit(const MyOrdersLoading());
+      await _reload(emit);
+    });
     on<MyOrdersRequested>((event, emit) async {
       emit(const MyOrdersLoading());
       await _reload(emit);
     });
-    on<MyOrdersRefreshed>((event, emit) => _reload(emit, petFilter: _petFilter));
+    on<MyOrdersRefreshed>((event, emit) async {
+      try {
+        await _reload(emit, petFilter: _petFilter);
+      } finally {
+        event._handled.complete();
+      }
+    });
     on<MyOrdersPetFilterChanged>((event, emit) {
       final current = state;
       if (current is MyOrdersLoaded) emit(current.withPetFilter(event.petId));
@@ -35,16 +44,19 @@ final class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
   final GetMyPets getMyPets;
   final CancelOrder cancelOrder;
   final Clock clock;
-  final User owner;
+
+  /// Set by [MyOrdersOwnerChanged] from the session; null while nobody is signed in.
+  User? _owner;
 
   PetId? get _petFilter => switch (state) {
     MyOrdersLoaded(:final petFilter) => petFilter,
-    MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
+    MyOrdersSignedOut() || MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
   };
 
   Future<void> _onCancellationRequested(OrderCancellationRequested event, Emitter<MyOrdersState> emit) async {
     final current = state;
-    if (current is! MyOrdersLoaded || current.isBusy) return;
+    final owner = _owner;
+    if (current is! MyOrdersLoaded || current.isBusy || owner == null) return;
     emit(current.withCancelling(event.id));
     final Result<ServiceOrder> result;
     try {
@@ -57,20 +69,25 @@ final class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
       case Success(:final value):
         await _reload(emit, petFilter: current.petFilter, notice: OrderCancelled(value));
       case Failure(:final error):
-        emit(current.withNotice(CancellationRejected(error)));
+        // A late client: the reason comes with the orders as they are now, which may have changed meanwhile.
+        await _reload(emit, petFilter: current.petFilter, notice: CancellationRejected(error));
     }
   }
 
   Future<void> _reload(Emitter<MyOrdersState> emit, {PetId? petFilter, MyOrdersNotice? notice}) async {
+    final owner = _owner;
+    if (owner == null) return emit(const MyOrdersSignedOut());
     final List<ServiceOrder> orders;
     final List<Pet> pets;
     try {
       orders = await getMyOrders(owner);
       pets = await getMyPets(owner);
     } on RepositoryException catch (cause) {
-      emit(MyOrdersFailure(cause));
+      if (owner == _owner) emit(MyOrdersFailure(cause));
       return;
     }
+    // Someone else signed in while this owner's orders were on the way.
+    if (owner != _owner) return;
     if (orders.isEmpty) {
       emit(MyOrdersEmpty(pets));
       return;
