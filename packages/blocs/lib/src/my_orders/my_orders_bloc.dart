@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:domain/domain.dart';
 import 'package:domain/domain.dart' as domain show cancelOrder;
@@ -20,7 +22,13 @@ final class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
       emit(const MyOrdersLoading());
       await _reload(emit);
     });
-    on<MyOrdersRefreshed>((event, emit) => _reload(emit, petFilter: _petFilter));
+    on<MyOrdersRefreshed>((event, emit) async {
+      try {
+        await _reload(emit, petFilter: _petFilter);
+      } finally {
+        event._handled.complete();
+      }
+    });
     on<MyOrdersPetFilterChanged>((event, emit) {
       final current = state;
       if (current is MyOrdersLoaded) emit(current.withPetFilter(event.petId));

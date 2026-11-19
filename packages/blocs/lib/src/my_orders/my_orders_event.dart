@@ -15,8 +15,14 @@ final class MyOrdersRequested extends MyOrdersEvent {
   const MyOrdersRequested();
 }
 
+/// Reloads without a spinner in place of the list; [handled] completes when the new data is shown, so
+/// pull to refresh knows when to stop.
 final class MyOrdersRefreshed extends MyOrdersEvent {
-  const MyOrdersRefreshed();
+  MyOrdersRefreshed();
+
+  final _handled = Completer<void>();
+
+  Future<void> get handled => _handled.future;
 }
 
 final class MyOrdersPetFilterChanged extends MyOrdersEvent {

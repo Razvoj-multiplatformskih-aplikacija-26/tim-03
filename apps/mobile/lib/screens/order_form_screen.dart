@@ -168,7 +168,7 @@ class _OrderFormState extends State<_OrderForm> {
     switch (state) {
       case OrderFormSucceeded():
         HapticFeedback.mediumImpact();
-        context.read<MyOrdersBloc>().add(const MyOrdersRefreshed());
+        context.read<MyOrdersBloc>().add(MyOrdersRefreshed());
         _showMessage('Nalog je poslat. Čeka potvrdu osoblja.');
         context.go('/orders');
       case OrderFormRejected(:final error):

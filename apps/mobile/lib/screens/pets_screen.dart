@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
 
 import 'log_out_button.dart';
+import 'my_orders_screen.dart' show refreshMyOrders;
 
 class PetsScreen extends StatelessWidget {
   const PetsScreen({super.key});
@@ -25,22 +26,25 @@ class PetsScreen extends StatelessWidget {
               onRetry: () => context.read<MyOrdersBloc>().add(const MyOrdersRequested()),
             ),
           ),
-          MyOrdersEmpty(:final pets) || MyOrdersLoaded(:final pets) => Center(
-            child: pets.isEmpty
-                ? const EmptyView(title: 'Nemate ljubimaca.')
-                : ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 720),
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      children: [
-                        for (final pet in pets)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _PetCard(pet: pet, activeOrders: _activeOrders(state, pet)),
-                          ),
-                      ],
-                    ),
-                  ),
+          MyOrdersEmpty(:final pets) || MyOrdersLoaded(:final pets) => RefreshIndicator(
+            onRefresh: () => refreshMyOrders(context),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  children: [
+                    if (pets.isEmpty) const EmptyView(title: 'Nemate ljubimaca.'),
+                    for (final pet in pets)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _PetCard(pet: pet, activeOrders: _activeOrders(state, pet)),
+                      ),
+                  ],
+                ),
+              ),
+            ),
           ),
         },
       ),
