@@ -16,7 +16,7 @@ class OrderDetailScreen extends StatelessWidget {
     final owner = context.read<AppDependencies>().owner;
     return BlocBuilder<MyOrdersBloc, MyOrdersState>(
       builder: (context, state) => switch (state) {
-        MyOrdersLoading() => const _Loading(),
+        MyOrdersSignedOut() || MyOrdersLoading() => const _Loading(),
         MyOrdersFailure() || MyOrdersEmpty() => const _NotFound(),
         MyOrdersLoaded() => switch (state.byId(id)) {
           final order? when AccessPolicy.canView(owner, order) => _DetailBody(order: order, state: state),

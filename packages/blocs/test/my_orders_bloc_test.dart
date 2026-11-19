@@ -25,12 +25,11 @@ void main() {
     getMyPets: GetMyPets(pets: InMemoryCenter()),
     cancelOrder: CancelOrder(orders: repository, clock: clock),
     clock: clock,
-    owner: owner,
   );
 
   /// Loads the orders and waits until the bloc is done with them; the test then skips these two states.
   Future<void> load(MyOrdersBloc bloc) async {
-    bloc.add(const MyOrdersRequested());
+    bloc.add(const MyOrdersOwnerChanged(owner));
     await bloc.stream.firstWhere((state) => state is! MyOrdersLoading);
   }
 
@@ -38,7 +37,7 @@ void main() {
     blocTest<MyOrdersBloc, MyOrdersState>(
       'loads the orders and asks the domain which ones may still be cancelled',
       build: build,
-      act: (bloc) => bloc.add(const MyOrdersRequested()),
+      act: (bloc) => bloc.add(const MyOrdersOwnerChanged(owner)),
       expect: () => [
         const MyOrdersLoading(),
         isA<MyOrdersLoaded>()
@@ -55,7 +54,7 @@ void main() {
         repository.orders.clear();
         return build();
       },
-      act: (bloc) => bloc.add(const MyOrdersRequested()),
+      act: (bloc) => bloc.add(const MyOrdersOwnerChanged(owner)),
       expect: () => [const MyOrdersLoading(), const MyOrdersEmpty(ownerPets)],
     );
 

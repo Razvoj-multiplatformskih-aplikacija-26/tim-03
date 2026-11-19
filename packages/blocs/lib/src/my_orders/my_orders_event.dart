@@ -4,6 +4,13 @@ sealed class MyOrdersEvent {
   const MyOrdersEvent();
 }
 
+/// The signed-in owner from the session; null after signing out.
+final class MyOrdersOwnerChanged extends MyOrdersEvent {
+  const MyOrdersOwnerChanged(this.owner);
+
+  final User? owner;
+}
+
 final class MyOrdersRequested extends MyOrdersEvent {
   const MyOrdersRequested();
 }

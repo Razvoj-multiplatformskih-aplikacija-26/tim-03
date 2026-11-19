@@ -14,7 +14,7 @@ class PetsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Moji ljubimci')),
       body: BlocBuilder<MyOrdersBloc, MyOrdersState>(
         builder: (context, state) => switch (state) {
-          MyOrdersLoading() => Center(
+          MyOrdersSignedOut() || MyOrdersLoading() => Center(
             child: Semantics(label: 'Učitavanje ljubimaca', child: const CircularProgressIndicator()),
           ),
           MyOrdersFailure() => Center(
@@ -48,7 +48,7 @@ class PetsScreen extends StatelessWidget {
 
 int _activeOrders(MyOrdersState state, Pet pet) => switch (state) {
   MyOrdersLoaded(:final orders) => orders.where((order) => order.petId == pet.id && order.isActive).length,
-  MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => 0,
+  MyOrdersSignedOut() || MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => 0,
 };
 
 class _PetCard extends StatelessWidget {

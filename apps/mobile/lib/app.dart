@@ -25,8 +25,7 @@ class SapaApp extends StatelessWidget {
           getMyPets: GetMyPets(pets: dependencies.pets),
           cancelOrder: CancelOrder(orders: dependencies.orders, clock: dependencies.clock),
           clock: dependencies.clock,
-          owner: dependencies.owner,
-        )..add(const MyOrdersRequested()),
+        )..add(MyOrdersOwnerChanged(dependencies.owner)),
         child: MaterialApp.router(
           title: 'Šapa',
           theme: SapaTheme.light(),

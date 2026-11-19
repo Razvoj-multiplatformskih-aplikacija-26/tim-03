@@ -34,7 +34,7 @@ class MyOrdersScreen extends StatelessWidget {
       builder: (context, state) {
         final petFilter = switch (state) {
           MyOrdersLoaded(:final petFilter) => petFilter,
-          MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
+          MyOrdersSignedOut() || MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
         };
         return DefaultTabController(
           length: 2,
@@ -56,7 +56,7 @@ class MyOrdersScreen extends StatelessWidget {
                     _TabLabel('Prethodni', count: state.history.length),
                   ],
                 ),
-                MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
+                MyOrdersSignedOut() || MyOrdersLoading() || MyOrdersFailure() || MyOrdersEmpty() => null,
               },
             ),
             floatingActionButton: FloatingActionButton.extended(
@@ -65,7 +65,7 @@ class MyOrdersScreen extends StatelessWidget {
               label: const Text('Zakaži uslugu'),
             ),
             body: switch (state) {
-              MyOrdersLoading() => Center(
+              MyOrdersSignedOut() || MyOrdersLoading() => Center(
                 child: Semantics(label: 'Učitavanje naloga', child: const CircularProgressIndicator()),
               ),
               MyOrdersFailure() => Center(

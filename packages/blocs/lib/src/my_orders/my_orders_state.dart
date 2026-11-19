@@ -10,6 +10,10 @@ sealed class MyOrdersState extends Equatable {
   String toString() => '$runtimeType';
 }
 
+final class MyOrdersSignedOut extends MyOrdersState {
+  const MyOrdersSignedOut();
+}
+
 final class MyOrdersLoading extends MyOrdersState {
   const MyOrdersLoading();
 }
