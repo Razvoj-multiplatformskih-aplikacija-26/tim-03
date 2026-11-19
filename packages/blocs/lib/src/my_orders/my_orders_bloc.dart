@@ -69,7 +69,8 @@ final class MyOrdersBloc extends Bloc<MyOrdersEvent, MyOrdersState> {
       case Success(:final value):
         await _reload(emit, petFilter: current.petFilter, notice: OrderCancelled(value));
       case Failure(:final error):
-        emit(current.withNotice(CancellationRejected(error)));
+        // A late client: the reason comes with the orders as they are now, which may have changed meanwhile.
+        await _reload(emit, petFilter: current.petFilter, notice: CancellationRejected(error));
     }
   }
 

@@ -25,7 +25,7 @@ class MyOrdersScreen extends StatelessWidget {
     final message = switch (notice) {
       OrderCancelled() => 'Nalog je otkazan.',
       CancellationRejected(:final error) => error.message,
-      CancellationFailed() => 'Otkazivanje nije uspelo. Proverite vezu i pokušajte ponovo.',
+      CancellationFailed(:final cause) => failureMessage(cause),
     };
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -77,8 +77,12 @@ class MyOrdersScreen extends StatelessWidget {
               MyOrdersSignedOut() || MyOrdersLoading() => Center(
                 child: Semantics(label: 'Učitavanje naloga', child: const CircularProgressIndicator()),
               ),
-              MyOrdersFailure() => Center(
-                child: FailureView(title: 'Nalozi nisu učitani.', onRetry: () => bloc.add(const MyOrdersRequested())),
+              MyOrdersFailure(:final cause) => Center(
+                child: FailureView(
+                  title: 'Nalozi nisu učitani.',
+                  cause: cause,
+                  onRetry: () => bloc.add(const MyOrdersRequested()),
+                ),
               ),
               MyOrdersEmpty() => RefreshIndicator(
                 onRefresh: () => refreshMyOrders(context),

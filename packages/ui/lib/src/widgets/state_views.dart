@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../text/failures.dart';
+
 class EmptyView extends StatelessWidget {
   const EmptyView({super.key, required this.title, this.message, this.icon = Icons.pets});
 
@@ -12,24 +14,21 @@ class EmptyView extends StatelessWidget {
       _StateLayout(icon: icon, iconColor: Theme.of(context).colorScheme.primary, title: title, message: message);
 }
 
+/// Says why the data is missing from the kind of failure ([cause]), as the login screen does, and offers a retry,
+/// so a screen never stays in loading when the server is down.
 class FailureView extends StatelessWidget {
-  const FailureView({
-    super.key,
-    required this.onRetry,
-    this.title = 'Podaci nisu učitani.',
-    this.message = 'Proverite vezu sa internetom i pokušajte ponovo.',
-  });
+  const FailureView({super.key, required this.onRetry, this.title = 'Podaci nisu učitani.', this.cause});
 
   final VoidCallback onRetry;
   final String title;
-  final String? message;
+  final Object? cause;
 
   @override
   Widget build(BuildContext context) => _StateLayout(
     icon: Icons.cloud_off_outlined,
     iconColor: Theme.of(context).colorScheme.error,
     title: title,
-    message: message,
+    message: failureMessage(cause),
     action: FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Pokušaj ponovo')),
   );
 }

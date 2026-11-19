@@ -20,9 +20,10 @@ class PetsScreen extends StatelessWidget {
           MyOrdersSignedOut() || MyOrdersLoading() => Center(
             child: Semantics(label: 'Učitavanje ljubimaca', child: const CircularProgressIndicator()),
           ),
-          MyOrdersFailure() => Center(
+          MyOrdersFailure(:final cause) => Center(
             child: FailureView(
               title: 'Ljubimci nisu učitani.',
+              cause: cause,
               onRetry: () => context.read<MyOrdersBloc>().add(const MyOrdersRequested()),
             ),
           ),
