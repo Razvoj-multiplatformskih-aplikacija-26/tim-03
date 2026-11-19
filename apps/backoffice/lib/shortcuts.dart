@@ -28,10 +28,15 @@ class RejectSelectedIntent extends Intent {
   const RejectSelectedIntent();
 }
 
+class RefreshIntent extends Intent {
+  const RefreshIntent();
+}
+
 Map<ShortcutActivator, Intent> orderShortcuts() => {
   const SingleActivator(LogicalKeyboardKey.arrowDown): const MoveSelectionIntent(1),
   const SingleActivator(LogicalKeyboardKey.arrowUp): const MoveSelectionIntent(-1),
   const SingleActivator(LogicalKeyboardKey.escape): const ClosePanelIntent(),
   const SingleActivator(LogicalKeyboardKey.keyP): const ConfirmSelectedIntent(),
   const SingleActivator(LogicalKeyboardKey.keyO): const RejectSelectedIntent(),
+  const SingleActivator(LogicalKeyboardKey.keyR): const RefreshIntent(),
 };

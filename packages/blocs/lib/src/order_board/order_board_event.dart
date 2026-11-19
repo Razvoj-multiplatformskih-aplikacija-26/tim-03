@@ -8,6 +8,11 @@ final class OrderBoardRequested extends OrderBoardEvent {
   const OrderBoardRequested();
 }
 
+/// Loads the board again to see changes made by others, keeping the selection.
+final class OrderBoardRefreshed extends OrderBoardEvent {
+  const OrderBoardRefreshed();
+}
+
 final class OrderBoardOrderSelected extends OrderBoardEvent {
   const OrderBoardOrderSelected(this.id);
 
