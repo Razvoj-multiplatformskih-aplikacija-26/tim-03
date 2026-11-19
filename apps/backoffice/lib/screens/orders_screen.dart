@@ -119,11 +119,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
           appBar: AppBar(
             title: const Text('Nalozi centra'),
             actions: [
+              Text(
+                '${bloc.staff.name} · ${bloc.staff.role.label}',
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
               Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: Text(
-                  '${bloc.staff.name} · ${bloc.staff.role.label}',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                padding: const EdgeInsets.only(left: 4, right: 8),
+                child: IconButton(
+                  tooltip: 'Odjavi se',
+                  icon: const Icon(Icons.logout),
+                  onPressed: () => context.read<SessionBloc>().add(const SessionLogOutRequested()),
                 ),
               ),
             ],
