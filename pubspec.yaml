@@ -13,6 +13,7 @@ workspace:
   - packages/use_cases
   - packages/api_contract
   - packages/api_mapping
+  - packages/api_client
   - packages/blocs
   - packages/ui
 
