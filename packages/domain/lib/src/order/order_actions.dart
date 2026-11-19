@@ -58,13 +58,18 @@ Result<ServiceOrder> confirmOrder(
   final next = Confirmed(confirmedBy: by.id, at: now.toUtc());
   if (!canTransition(order.status, next)) return Failure(InvalidTransition(from: order.status, to: next));
 
+  // The order never competes with itself: the list may be newer than [order] and already hold it confirmed.
+  final others = [
+    for (final other in orders)
+      if (other.id != order.id) other,
+  ];
   if (order.service.needsKennel) {
-    return switch (assignKennel(kennels: kennels, orders: orders, period: order.period, petSize: pet.size)) {
+    return switch (assignKennel(kennels: kennels, orders: others, period: order.period, petSize: pet.size)) {
       Success(value: final kennel) => Success(order.copyWith(status: next, kennelId: kennel.id)),
       Failure(:final error) => Failure(error),
     };
   }
-  return switch (assignStaff(staff: staff, orders: orders, service: order.service, period: order.period)) {
+  return switch (assignStaff(staff: staff, orders: others, service: order.service, period: order.period)) {
     Success(value: final member) => Success(order.copyWith(status: next, assigneeId: member.id)),
     Failure(:final error) => Failure(error),
   };
