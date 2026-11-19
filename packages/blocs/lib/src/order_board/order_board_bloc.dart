@@ -19,6 +19,12 @@ final class OrderBoardBloc extends Bloc<OrderBoardEvent, OrderBoardState> {
       emit(const OrderBoardLoading());
       await _load(emit);
     });
+    on<OrderBoardRefreshed>((event, emit) async {
+      final current = state;
+      // While an action is on its way, its own reload brings the fresh board.
+      if (current is OrderBoardLoaded && current.isBusy) return;
+      await _load(emit, selectedId: _selectedId);
+    });
     on<OrderBoardOrderSelected>((event, emit) {
       final current = state;
       if (current is OrderBoardLoaded) emit(current.copyWith(selectedId: event.id, clearSelection: event.id == null));
@@ -65,7 +71,8 @@ final class OrderBoardBloc extends Bloc<OrderBoardEvent, OrderBoardState> {
       case Success(:final value):
         await _load(emit, selectedId: _selectedId, notice: StaffActionSucceeded(value));
       case Failure(:final error):
-        _finish(emit, StaffActionRejected(error));
+        // A late client: the reason comes with the board as it is now, which someone else may have changed.
+        await _load(emit, selectedId: _selectedId, notice: StaffActionRejected(error));
     }
   }
 

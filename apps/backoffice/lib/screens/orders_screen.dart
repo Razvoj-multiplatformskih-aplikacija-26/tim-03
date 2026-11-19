@@ -71,7 +71,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         Pending() || InProgress() || ReadyForPickup() || Completed() || Cancelled() => 'Nalog je sačuvan.',
       },
       StaffActionRejected(:final error) => error.message,
-      StaffActionFailed() => 'Promena nije sačuvana. Proverite vezu i pokušajte ponovo.',
+      StaffActionFailed(:final cause) => 'Promena nije sačuvana. ${failureMessage(cause)}',
     };
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -87,6 +87,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
       shortcuts: orderShortcuts(),
       child: Actions(
         actions: {
+          RefreshIntent: CallbackAction<RefreshIntent>(
+            onInvoke: (_) {
+              bloc.add(const OrderBoardRefreshed());
+              return null;
+            },
+          ),
           MoveSelectionIntent: CallbackAction<MoveSelectionIntent>(
             onInvoke: (intent) {
               bloc.add(OrderBoardSelectionMoved(intent.steps));
@@ -119,6 +125,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
           appBar: AppBar(
             title: const Text('Nalozi centra'),
             actions: [
+              IconButton(
+                tooltip: 'Osveži (R)',
+                icon: const Icon(Icons.refresh),
+                onPressed: () => bloc.add(const OrderBoardRefreshed()),
+              ),
+              const SizedBox(width: 8),
               Text(
                 '${bloc.staff.name} · ${bloc.staff.role.label}',
                 style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -140,8 +152,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
               OrderBoardLoading() => Center(
                 child: Semantics(label: 'Učitavanje naloga', child: const CircularProgressIndicator()),
               ),
-              OrderBoardFailure() => Center(
-                child: FailureView(title: 'Nalozi nisu učitani.', onRetry: () => bloc.add(const OrderBoardRequested())),
+              OrderBoardFailure(:final cause) => Center(
+                child: FailureView(
+                  title: 'Nalozi nisu učitani.',
+                  cause: cause,
+                  onRetry: () => bloc.add(const OrderBoardRequested()),
+                ),
               ),
               OrderBoardLoaded(isEmpty: true) => const Center(
                 child: EmptyView(title: 'Nema naloga.', message: 'Nalozi vlasnika pojaviće se ovde.'),
