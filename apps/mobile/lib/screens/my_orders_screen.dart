@@ -7,6 +7,7 @@ import 'package:ui/ui.dart';
 
 import '../data/fake_center.dart';
 import '../dependencies.dart';
+import 'log_out_button.dart';
 
 typedef _Group = (String title, List<ServiceOrder> orders);
 
@@ -48,6 +49,7 @@ class MyOrdersScreen extends StatelessWidget {
                   onPressed: () => bloc.add(const MyOrdersRequested()),
                 ),
                 const _FakeDataMenu(),
+                const LogOutButton(),
               ],
               bottom: switch (state) {
                 MyOrdersLoaded() => TabBar(

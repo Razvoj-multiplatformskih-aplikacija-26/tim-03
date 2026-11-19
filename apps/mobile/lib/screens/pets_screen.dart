@@ -5,13 +5,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ui/ui.dart';
 
+import 'log_out_button.dart';
+
 class PetsScreen extends StatelessWidget {
   const PetsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Moji ljubimci')),
+      appBar: AppBar(title: const Text('Moji ljubimci'), actions: const [LogOutButton()]),
       body: BlocBuilder<MyOrdersBloc, MyOrdersState>(
         builder: (context, state) => switch (state) {
           MyOrdersSignedOut() || MyOrdersLoading() => Center(
