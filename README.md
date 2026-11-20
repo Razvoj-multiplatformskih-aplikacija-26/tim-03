@@ -62,3 +62,80 @@ Sva pravila su u `packages/domain/lib/src` i vraćaju uspeh ili grešku kao tip.
 
 R6, R7 i R8 zavise od naloga drugih korisnika, pa su u domenu napisani kao izračunavanja nad listama. U KT1 se računaju nad lažnim podacima u memoriji, a od KT2 konačnu odluku donosi server.
 
+## Pokretanje
+
+Potrebni su Docker Desktop (na Windows-u sa WSL 2) i Flutter 3.47.6. Za backoffice na Windows-u treba Visual Studio 2022 sa „Desktop development with C++“ i C++ ATL (zbog `flutter_secure_storage`), a za mobilnu Android emulator.
+
+### Baza i server
+
+Iz korena repozitorijuma, posle čistog kloniranja:
+
+```sh
+cp .env.example .env    # Windows: copy .env.example .env
+docker compose up -d --build
+```
+
+`.env` se ne menja: `.env.example` već ima razvojne vrednosti. `compose.yaml` podiže tri servisa:
+
+| Servis | Šta radi | Adresa |
+| --- | --- | --- |
+| `db` | PostgreSQL 17 | `localhost:5435` |
+| `migrate` | dbmate primeni migracije iz `apps/server/migrations`, pa izlazi | — |
+| `server` | server u Dartu na Relic-u, slika iz `apps/server/Dockerfile` | http://localhost:8080 |
+
+Kada je baza prazna, server upisuje početne podatke: korisnike sa heširanim lozinkama (Argon2id), ljubimce, boksove, radno vreme i naloge u svih sedam stanja.
+
+Provera: `docker compose ps -a` (servis `migrate` je `Exited (0)`) i `curl localhost:8080/health` (odgovor `ok`; u PowerShell-u `curl.exe`).
+
+| Komanda | Šta radi |
+| --- | --- |
+| `docker compose logs server` | ispis servera; `logs migrate` za migracije |
+| `docker compose up -d --build server` | nova slika servera posle izmene u `apps/server` ili u paketima |
+| `docker compose stop server` / `start server` | zaustavlja i vraća server (provera „server ne radi“ u aplikacijama) |
+| `docker compose down` | gasi sistem, podaci ostaju |
+| `docker compose down -v` | gasi sistem i briše bazu; sledeći `up -d` kreće od nule |
+
+Lozinka baze, `DEMO_PASSWORD`, `JWT_SECRET`, trajanje prijave (`SESSION_TTL_MINUTES`, 480) i portovi su u `.env`, koji nije u git-u. Za proveru isteka prijave postavite `SESSION_TTL_MINUTES=1`, pa `docker compose up -d server`; posle vratite 480. SQL iz terminala: `docker compose exec db psql -U sapa -d sapa`.
+
+### Aplikacije
+
+Aplikacije rade nad serverom i nalaze ga bez izmene koda: Android emulator na `10.0.2.2:8080`, desktop i pregledač na `localhost:8080`. Telefon na istoj mreži se pokreće uz `--dart-define=SERVER_URL=http://<IP računara>:8080`. Pregledač sme da zove server samo sa adrese iz `CORS_ORIGINS` u `.env`; `.env.example` dozvoljava backoffice na `http://localhost:8081`.
+
+Svaka aplikacija u svom terminalu, iz korena repozitorijuma:
+
+```sh
+cd apps/mobile
+flutter run
+```
+
+```sh
+cd apps/backoffice
+flutter run -d windows    # ili -d chrome --web-port 8081
+```
+
+Prijava ostaje posle ponovnog pokretanja: token je u bezbednom skladištu platforme (Keystore, Keychain, Credential Manager), a u pregledaču u HttpOnly kolačiću. Lozinka se na uređaju ne čuva.
+
+### Demo nalozi
+
+Lozinka za sve naloge je vrednost `DEMO_PASSWORD` iz `.env` (u `.env.example`: `sapa-demo`).
+
+| Nalog | Ime | Uloga | Aplikacija |
+| --- | --- | --- | --- |
+| `vlasnik1` | Jelena Marković | vlasnik | mobilna |
+| `vlasnik2` | Petar Nikolić | vlasnik | mobilna |
+| `negovatelj1` | Marija Ilić | negovatelj | backoffice |
+| `veterinar1` | dr Stefan Kovač | veterinar | backoffice |
+| `setac1` | Nikola Jović | šetač | backoffice |
+| `menadzer1` | Ivana Simić | menadžer | backoffice |
+
+Vlasnik se ne može prijaviti u backoffice, a osoblje u mobilnu aplikaciju; aplikacija tada kaže zašto.
+
+### Pozivi mimo aplikacije
+
+Server isto pravilo proverava i kada poziv ne dolazi iz aplikacije. Primeri su za Git Bash (PowerShell drugačije prosleđuje navodnike u JSON-u), a token se uzima iz polja `token` odgovora na prijavu:
+
+```sh
+curl -X POST localhost:8080/api/v1/sessions -H "Content-Type: application/json" -d "{\"username\":\"vlasnik1\",\"password\":\"sapa-demo\"}"
+curl localhost:8080/api/v1/board                                                      # 401 sign-in-required
+curl -X POST localhost:8080/api/v1/orders/<id>/confirmation -H "Authorization: Bearer <token>"   # vlasnik: 403 not-allowed
+```
